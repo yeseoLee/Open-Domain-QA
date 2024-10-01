@@ -1,3 +1,11 @@
+---
+name: Feature Request
+about: Suggest a new feature for this project
+title: "[FEAT]"
+labels: 
+assignees: ''
+---
+
 # ISSUE: Feature
 
 ## 노션 링크
