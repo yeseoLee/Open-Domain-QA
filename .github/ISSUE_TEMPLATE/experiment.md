@@ -1,8 +1,8 @@
 ---
 name: Experiment Issue
-about: For new experiments
+about: For new experiments
 title: "[EXP]"
-labels:
+labels: 
 assignees: ''
 ---
 
