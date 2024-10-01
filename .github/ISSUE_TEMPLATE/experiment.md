@@ -1,3 +1,11 @@
+---
+name: Experiment Issue
+about: For new experiments
+title: "[EXP]"
+labels:
+assignees: ''
+---
+
 # ISSUE: Experiment
 
 ## 노션 링크
