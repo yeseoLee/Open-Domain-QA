@@ -173,9 +173,9 @@ class CustomTrainingArguments(TrainingArguments):
         },
     )
 
-    evaluation_strategy: Union[IntervalStrategy, str] = field(
-        default=None,
-        metadata={"help": "Deprecated. Use `eval_strategy` instead"},
+    eval_strategy: Union[IntervalStrategy, str] = field(
+        default="no",
+        metadata={"help": "The evaluation strategy to use."},
     )
 
     save_steps: float = field(
