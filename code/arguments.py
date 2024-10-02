@@ -93,14 +93,18 @@ class DataTrainingArguments:
         default=False, metadata={"help": "Whether to build with faiss"}
     )
 
+
 @dataclass
 class CustomTrainingArguments(TrainingArguments):
     """
     TrainingArguments is the subset of the arguments we use in our example scripts **which relate to the training loop
     itself**.
     """
+
     output_dir: str = field(
-        metadata={"help": "The output directory where the model predictions and checkpoints will be written."},
+        metadata={
+            "help": "The output directory where the model predictions and checkpoints will be written."
+        },
     )
     overwrite_output_dir: bool = field(
         default=False,
@@ -112,23 +116,36 @@ class CustomTrainingArguments(TrainingArguments):
         },
     )
     do_train: bool = field(default=False, metadata={"help": "Whether to run training."})
-    do_eval: bool = field(default=False, metadata={"help": "Whether to run eval on the dev set."})
-    do_predict: bool = field(default=False, metadata={"help": "Whether to run predictions on the test set."})
+    do_eval: bool = field(
+        default=False, metadata={"help": "Whether to run eval on the dev set."}
+    )
+    do_predict: bool = field(
+        default=False, metadata={"help": "Whether to run predictions on the test set."}
+    )
 
     per_device_train_batch_size: int = field(
-        default=8, metadata={"help": "Batch size per GPU/TPU/MPS/NPU core/CPU for training."}
+        default=8,
+        metadata={"help": "Batch size per GPU/TPU/MPS/NPU core/CPU for training."},
     )
     per_device_eval_batch_size: int = field(
-        default=8, metadata={"help": "Batch size per GPU/TPU/MPS/NPU core/CPU for evaluation."}
+        default=8,
+        metadata={"help": "Batch size per GPU/TPU/MPS/NPU core/CPU for evaluation."},
     )
 
-    learning_rate: float = field(default=5e-5, metadata={"help": "The initial learning rate for AdamW."})
-    weight_decay: float = field(default=0.0, metadata={"help": "Weight decay for AdamW if we apply some."})
+    learning_rate: float = field(
+        default=5e-5, metadata={"help": "The initial learning rate for AdamW."}
+    )
+    weight_decay: float = field(
+        default=0.0, metadata={"help": "Weight decay for AdamW if we apply some."}
+    )
 
-    num_train_epochs: float = field(default=5.0, metadata={"help": "Total number of training epochs to perform."})
+    num_train_epochs: float = field(
+        default=5.0, metadata={"help": "Total number of training epochs to perform."}
+    )
 
     warmup_ratio: float = field(
-        default=0.0, metadata={"help": "Linear warmup over warmup_ratio fraction of total steps."}
+        default=0.0,
+        metadata={"help": "Linear warmup over warmup_ratio fraction of total steps."},
     )
 
     logging_steps: float = field(
@@ -155,7 +172,6 @@ class CustomTrainingArguments(TrainingArguments):
             )
         },
     )
-
 
     evaluation_strategy: Union[IntervalStrategy, str] = field(
         default=None,
@@ -193,9 +209,13 @@ class CustomTrainingArguments(TrainingArguments):
     )
 
     metric_for_best_model: Optional[str] = field(
-        default=None, metadata={"help": "The metric to use to compare two different models."}
+        default=None,
+        metadata={"help": "The metric to use to compare two different models."},
     )
 
     greater_is_better: Optional[bool] = field(
-        default=None, metadata={"help": "Whether the `metric_for_best_model` should be maximized or not."}
+        default=None,
+        metadata={
+            "help": "Whether the `metric_for_best_model` should be maximized or not."
+        },
     )
