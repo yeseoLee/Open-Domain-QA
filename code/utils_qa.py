@@ -30,17 +30,17 @@ from tqdm.auto import tqdm
 from transformers import PreTrainedTokenizerFast, TrainingArguments, is_torch_available
 from transformers.trainer_utils import get_last_checkpoint
 
-import constants
-
 logger = logging.getLogger(__name__)
 
 
-def set_seed(seed: int = constants.SEED):
+def set_seed(seed: int = 42, deterministic: bool = True):
     """
     seed 고정하는 함수 (random, numpy, torch)
 
     Args:
         seed (:obj:`int`): The seed to set.
+        deterministic (`bool`, defaults to `True`):
+            Whether to use deterministic algorithms where available. Can slow down training.
     """
     random.seed(seed)
     np.random.seed(seed)
@@ -48,8 +48,10 @@ def set_seed(seed: int = constants.SEED):
         torch.manual_seed(seed)
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)  # if use multi-GPU
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+        if deterministic:
+            # torch.use_deterministic_algorithms(True)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
 
 def postprocess_qa_predictions(
