@@ -19,6 +19,8 @@ source ~/.bashrc
 
 conda create -n main python=3.10.13 -y
 
+sudo chmod -R 777 /opt/conda/env
+
 ##################### Users: dir & permission #####################
 users=("yeseo" "sujin" "minseo" "gayeon" "seongmin" "seongjae")
 
