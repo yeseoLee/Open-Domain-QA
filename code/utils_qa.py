@@ -13,8 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Pre-processing
-Post-processing utilities for question answering.
+Pre-processing & Post-processing utilities for question answering.
 """
 import collections
 import json
@@ -25,23 +24,23 @@ from typing import Any, Optional, Tuple
 
 import numpy as np
 import torch
-from arguments import DataTrainingArguments, ModelArguments
+from arguments import DataTrainingArguments
 from datasets import DatasetDict
 from tqdm.auto import tqdm
 from transformers import PreTrainedTokenizerFast, TrainingArguments, is_torch_available
 from transformers.trainer_utils import get_last_checkpoint
 
-import constants
-
 logger = logging.getLogger(__name__)
 
 
-def set_seed(seed: int = constants.SEED):
+def set_seed(seed: int = 42, deterministic: bool = True):
     """
     seed 고정하는 함수 (random, numpy, torch)
 
     Args:
         seed (:obj:`int`): The seed to set.
+        deterministic (`bool`, defaults to `True`):
+            Whether to use deterministic algorithms where available. Can slow down training.
     """
     random.seed(seed)
     np.random.seed(seed)
@@ -49,8 +48,10 @@ def set_seed(seed: int = constants.SEED):
         torch.manual_seed(seed)
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)  # if use multi-GPU
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+        if deterministic:
+            # torch.use_deterministic_algorithms(True)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
 
 def postprocess_qa_predictions(
@@ -322,8 +323,33 @@ def check_no_error(
     datasets: DatasetDict,
     tokenizer,
 ) -> Tuple[Any, int]:
+    """
+    훈련 및 평가 전 체크리스트를 확인하여 오류를 방지하는 함수.
 
-    # last checkpoint 찾기.
+    Args:
+        data_args (DataTrainingArguments):
+            데이터 관련 훈련 설정을 포함한 인자.
+            `max_seq_length` 같은 시퀀스 길이 설정 등이 포함될 수 있음.
+
+        training_args (TrainingArguments):
+            훈련 관련 설정을 포함한 인자.
+            `output_dir` (출력 디렉토리), `do_train` (훈련 여부),
+            `overwrite_output_dir` (출력 디렉토리 덮어쓰기 여부) 등의 정보를 포함함.
+
+        datasets (DatasetDict):
+            훈련, 검증, 테스트 데이터셋을 포함하는 객체.
+            `datasets["validation"]`과 같이 접근 가능하며, 검증 데이터가 포함되어 있는지 확인하는 데 사용됨.
+
+        tokenizer:
+            텍스트 데이터를 토큰으로 변환하는 객체.
+            이 함수는 `PreTrainedTokenizerFast`의 인스턴스여야 함.
+
+    Returns:
+        Tuple[Any, int]:
+            마지막 체크포인트 `last_checkpoint`와 최대 시퀀스 길이 `max_seq_length`를 반환
+    """
+
+    # overwrite 옵션이 없고 checkpoint가 존재하면 이를 반환
     last_checkpoint = None
     if (
         os.path.isdir(training_args.output_dir)
@@ -350,8 +376,9 @@ def check_no_error(
             "requirement"
         )
 
+    # data_args.max_seq_length가 모델이 지원하는 최대 시퀀스 길이보다 큰지 확인
     if data_args.max_seq_length > tokenizer.model_max_length:
-        logger.warn(
+        logger.warning(
             f"The max_seq_length passed ({data_args.max_seq_length}) is larger than the maximum length for the"
             f"model ({tokenizer.model_max_length}). Using max_seq_length={tokenizer.model_max_length}."
         )

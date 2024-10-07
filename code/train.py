@@ -1,11 +1,8 @@
 import logging
 import os
 import sys
-import random
+from typing import Dict, NoReturn, Tuple
 import numpy as np
-import torch
-from typing import NoReturn
-
 from arguments import DataTrainingArguments, ModelArguments, CustomTrainingArguments
 from datasets import DatasetDict, load_from_disk, load_metric
 from trainer_qa import QuestionAnsweringTrainer
@@ -20,23 +17,16 @@ from transformers import (
 )
 from utils_qa import check_no_error, postprocess_qa_predictions, set_seed
 
-
 logger = logging.getLogger(__name__)
 
 
 def main():
-    # 가능한 arguments 들은 ./arguments.py 나 transformer package 안의 src/transformers/training_args.py 에서 확인 가능합니다.
-    # --help flag 를 실행시켜서 확인할 수 도 있습니다.
-
     parser = HfArgumentParser(
         (ModelArguments, DataTrainingArguments, CustomTrainingArguments)
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-    print(model_args.model_name_or_path)
 
-    # [참고] argument를 manual하게 수정하고 싶은 경우에 아래와 같은 방식을 사용할 수 있습니다
-    # training_args.per_device_train_batch_size = 4
-    # print(training_args.per_device_train_batch_size)
+    # 가능한 arguments들은 arguments.py에서 확인하거나 --help flag로 확인
 
     print(f"model is from {model_args.model_name_or_path}")
     print(f"data is from {data_args.dataset_name}")
@@ -52,7 +42,7 @@ def main():
     logger.info("Training/evaluation parameters %s", training_args)
 
     # 모델을 초기화하기 전에 난수를 고정합니다.
-    set_seed()
+    set_seed(training_args.seed)
 
     datasets = load_from_disk(data_args.dataset_name)
     print(datasets)
@@ -62,19 +52,18 @@ def main():
     config = AutoConfig.from_pretrained(
         (
             model_args.config_name
-            if model_args.config_name is not None
+            if model_args.config_name
             else model_args.model_name_or_path
         ),
     )
     tokenizer = AutoTokenizer.from_pretrained(
         (
             model_args.tokenizer_name
-            if model_args.tokenizer_name is not None
+            if model_args.tokenizer_name
             else model_args.model_name_or_path
         ),
-        # 'use_fast' argument를 True로 설정할 경우 rust로 구현된 tokenizer를 사용할 수 있습니다.
-        # False로 설정할 경우 python으로 구현된 tokenizer를 사용할 수 있으며,
-        # rust version이 비교적 속도가 빠릅니다.
+        # 'use_fast' True: rust로 구현된 tokenizer / False: python으로 구현된 tokenizer
+        # rust version이 비교적 속도가 빠름
         use_fast=True,
     )
     model = AutoModelForQuestionAnswering.from_pretrained(
@@ -91,7 +80,7 @@ def main():
         type(model),
     )
 
-    # do_train mrc model 혹은 do_eval mrc model
+    # train or eval mrc model
     if training_args.do_train or training_args.do_eval:
         run_mrc(data_args, training_args, model_args, datasets, tokenizer, model)
 
@@ -125,7 +114,7 @@ def run_mrc(
         data_args, training_args, datasets, tokenizer
     )
 
-    # Train preprocessing / 전처리를 진행합니다.
+    # Train preprocessing
     def prepare_train_features(examples):
         # truncation과 padding(length가 짧을때만)을 통해 toknization을 진행하며, stride를 이용하여 overflow를 유지합니다.
         # 각 example들은 이전의 context와 조금씩 겹치게됩니다.
@@ -137,7 +126,9 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            return_token_type_ids=True,  # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+            return_token_type_ids=(
+                True if model_args.base_model.lower() == "bert" else False
+            ),  # RoBERTa는 BERT와 달리 token_type_ids(문장 간 구분을 위한 역할을 수행)를 사용하지 않음
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
@@ -249,7 +240,7 @@ def run_mrc(
             sample_index = sample_mapping[i]
             tokenized_examples["example_id"].append(examples["id"][sample_index])
 
-            # Set to None the offset_mapping을 None으로 설정해서 token position이 context의 일부인지 쉽게 판별 할 수 있습니다.
+            # context의 일부가 아닌 offset_mapping을 None으로 설정하면 token position이 context의 일부인지 쉽게 확인 할 수 있음
             tokenized_examples["offset_mapping"][i] = [
                 (o if sequence_ids[k] == context_index else None)
                 for k, o in enumerate(tokenized_examples["offset_mapping"][i])
@@ -276,7 +267,12 @@ def run_mrc(
     )
 
     # Post-processing:
-    def post_processing_function(examples, features, predictions, training_args):
+    def post_processing_function(
+        examples,
+        features,
+        predictions: Tuple[np.ndarray, np.ndarray],
+        training_args: TrainingArguments,
+    ) -> EvalPrediction:
         # Post-processing: start logits과 end logits을 original context의 정답과 match시킵니다.
         predictions = postprocess_qa_predictions(
             examples=examples,
@@ -289,9 +285,9 @@ def run_mrc(
         formatted_predictions = [
             {"id": k, "prediction_text": v} for k, v in predictions.items()
         ]
+
         if training_args.do_predict:
             return formatted_predictions
-
         elif training_args.do_eval:
             references = [
                 {"id": ex["id"], "answers": ex[answer_column_name]}
@@ -303,7 +299,7 @@ def run_mrc(
 
     metric = load_metric("squad")
 
-    def compute_metrics(p: EvalPrediction):
+    def compute_metrics(p: EvalPrediction) -> Dict:
         return metric.compute(predictions=p.predictions, references=p.label_ids)
 
     # Trainer 초기화
@@ -354,7 +350,6 @@ def run_mrc(
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
         metrics = trainer.evaluate()
-
         metrics["eval_samples"] = len(eval_dataset)
 
         trainer.log_metrics("eval", metrics)

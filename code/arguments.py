@@ -16,6 +16,12 @@ class ModelArguments:
             "help": "Path to pretrained model or model identifier from huggingface.co/models"
         },
     )
+    base_model: str = field(
+        default="bert",
+        metadata={
+            "help": "The base model to use for training and inference. Options include 'bert', 'roberta', 'bart', etc."
+        },
+    )
     config_name: Optional[str] = field(
         default=None,
         metadata={
