@@ -1,6 +1,5 @@
 """
 Open-Domain Question Answering 을 수행하는 inference 코드 입니다.
-
 대부분의 로직은 train.py 와 비슷하나 retrieval, predict 부분이 추가되어 있습니다.
 """
 
@@ -9,7 +8,7 @@ import sys
 from typing import Callable, Dict, List, NoReturn, Tuple
 
 import numpy as np
-from arguments import DataTrainingArguments, ModelArguments
+from arguments import DataTrainingArguments, ModelArguments, CustomTrainingArguments
 from datasets import (
     Dataset,
     DatasetDict,
@@ -36,14 +35,12 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    # 가능한 arguments 들은 ./arguments.py 나 transformer package 안의 src/transformers/training_args.py 에서 확인 가능합니다.
-    # --help flag 를 실행시켜서 확인할 수 도 있습니다.
-
     parser = HfArgumentParser(
-        (ModelArguments, DataTrainingArguments, TrainingArguments)
+        (ModelArguments, DataTrainingArguments, CustomTrainingArguments)
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
+    # 가능한 arguments들은 arguments.py에서 확인하거나 --help flag로 확인
     training_args.do_train = True
 
     print(f"model is from {model_args.model_name_or_path}")
@@ -51,7 +48,7 @@ def main():
 
     # logging 설정
     logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+        format="%(asctime)s - %(levelname)s - %(name)s -    %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
@@ -80,6 +77,8 @@ def main():
             if model_args.tokenizer_name
             else model_args.model_name_or_path
         ),
+        # 'use_fast' True: rust로 구현된 tokenizer / False: python으로 구현된 tokenizer
+        # rust version이 비교적 속도가 빠름
         use_fast=True,
     )
     model = AutoModelForQuestionAnswering.from_pretrained(
@@ -177,11 +176,9 @@ def run_mrc(
     pad_on_right = tokenizer.padding_side == "right"
 
     # 오류가 있는지 확인합니다.
-    last_checkpoint, max_seq_length = check_no_error(
-        data_args, training_args, datasets, tokenizer
-    )
+    _, max_seq_length = check_no_error(data_args, training_args, datasets, tokenizer)
 
-    # Validation preprocessing / 전처리를 진행합니다.
+    # Validation preprocessing
     def prepare_validation_features(examples):
         # truncation과 padding(length가 짧을때만)을 통해 toknization을 진행하며, stride를 이용하여 overflow를 유지합니다.
         # 각 example들은 이전의 context와 조금씩 겹치게됩니다.
@@ -213,7 +210,7 @@ def run_mrc(
             sample_index = sample_mapping[i]
             tokenized_examples["example_id"].append(examples["id"][sample_index])
 
-            # context의 일부가 아닌 offset_mapping을 None으로 설정하여 토큰 위치가 컨텍스트의 일부인지 여부를 쉽게 판별할 수 있습니다.
+            # context의 일부가 아닌 offset_mapping을 None으로 설정하면 token position이 context의 일부인지 쉽게 확인 할 수 있음
             tokenized_examples["offset_mapping"][i] = [
                 (o if sequence_ids[k] == context_index else None)
                 for k, o in enumerate(tokenized_examples["offset_mapping"][i])
@@ -265,7 +262,6 @@ def run_mrc(
                 {"id": ex["id"], "answers": ex[answer_column_name]}
                 for ex in datasets["validation"]
             ]
-
             return EvalPrediction(
                 predictions=formatted_predictions, label_ids=references
             )
@@ -275,7 +271,6 @@ def run_mrc(
     def compute_metrics(p: EvalPrediction) -> Dict:
         return metric.compute(predictions=p.predictions, references=p.label_ids)
 
-    print("init trainer...")
     # Trainer 초기화
     trainer = QuestionAnsweringTrainer(
         model=model,
@@ -289,8 +284,6 @@ def run_mrc(
         compute_metrics=compute_metrics,
     )
 
-    logger.info("*** Evaluate ***")
-
     #### eval dataset & eval example - predictions.json 생성됨
     if training_args.do_predict:
         predictions = trainer.predict(
@@ -303,6 +296,7 @@ def run_mrc(
         )
 
     if training_args.do_eval:
+        logger.info("*** Evaluate ***")
         metrics = trainer.evaluate()
         metrics["eval_samples"] = len(eval_dataset)
 
