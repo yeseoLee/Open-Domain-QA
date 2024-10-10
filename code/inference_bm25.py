@@ -1,16 +1,14 @@
 """
 Open-Domain Question Answering 을 수행하는 inference 코드 입니다.
-
 대부분의 로직은 train.py 와 비슷하나 retrieval, predict 부분이 추가되어 있습니다.
 """
-
 
 import logging
 import sys
 from typing import Callable, Dict, List, NoReturn, Tuple
 
 import numpy as np
-from arguments import DataTrainingArguments, ModelArguments
+from arguments import DataTrainingArguments, ModelArguments, CustomTrainingArguments
 from datasets import (
     Dataset,
     DatasetDict,
@@ -33,17 +31,12 @@ from transformers import (
 )
 from utils_qa import check_no_error, postprocess_qa_predictions, set_seed
 
-
-seed = 2024
 logger = logging.getLogger(__name__)
 
 
 def main():
-    # 가능한 arguments 들은 ./arguments.py 나 transformer package 안의 src/transformers/training_args.py 에서 확인 가능합니다.
-    # --help flag 를 실행시켜서 확인할 수 도 있습니다.
-
     parser = HfArgumentParser(
-        (ModelArguments, DataTrainingArguments, TrainingArguments)
+        (ModelArguments, DataTrainingArguments, CustomTrainingArguments)
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
@@ -63,7 +56,7 @@ def main():
     logger.info("Training/evaluation parameters %s", training_args)
 
     # 모델을 초기화하기 전에 난수를 고정합니다.
-    set_seed(seed)
+    set_seed(training_args.seed)
 
     datasets = load_from_disk(data_args.dataset_name)
     print(datasets)
@@ -101,7 +94,7 @@ def main():
 def run_sparse_retrieval(
     tokenize_fn: Callable[[str], List[str]],
     datasets: DatasetDict,
-    training_args: TrainingArguments,
+    training_args: CustomTrainingArguments,
     data_args: DataTrainingArguments,
     data_path: str = "../data",
     context_path: str = "wikipedia_documents.json",
@@ -154,7 +147,7 @@ def run_sparse_retrieval(
 
 def run_mrc(
     data_args: DataTrainingArguments,
-    training_args: TrainingArguments,
+    training_args: CustomTrainingArguments,
     model_args: ModelArguments,
     datasets: DatasetDict,
     tokenizer,
@@ -239,7 +232,7 @@ def run_mrc(
         examples,
         features,
         predictions: Tuple[np.ndarray, np.ndarray],
-        training_args: TrainingArguments,
+        training_args: CustomTrainingArguments,
     ) -> EvalPrediction:
         # Post-processing: start logits과 end logits을 original context의 정답과 match시킵니다.
         predictions = postprocess_qa_predictions(

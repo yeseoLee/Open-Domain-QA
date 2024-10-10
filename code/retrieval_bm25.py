@@ -52,6 +52,8 @@ class RetrievalBM25:
         with open(os.path.join(data_path, context_path), "r", encoding="utf-8") as f:
             wiki = json.load(f)
 
+        # BM25 단독으로 사용하시는 경우, title을 추가해주시면 성능이 더 올라갑니다.
+        #self.contexts = list(dict.fromkeys([v["title"] + ": " + v["text"] for v in wiki.values()]))
         self.contexts = list(dict.fromkeys([v["text"] for v in wiki.values()]))
         print(f"Lengths of unique contexts : {len(self.contexts)}")
         self.ids = list(range(len(self.contexts)))
