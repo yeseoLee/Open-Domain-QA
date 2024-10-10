@@ -146,7 +146,7 @@ class CustomTrainingArguments(TrainingArguments):
     )
 
     num_train_epochs: float = field(
-        default=5.0, metadata={"help": "Total number of training epochs to perform."}
+        default=3.0, metadata={"help": "Total number of training epochs to perform."}
     )
 
     warmup_ratio: float = field(
@@ -224,4 +224,8 @@ class CustomTrainingArguments(TrainingArguments):
         metadata={
             "help": "Whether the `metric_for_best_model` should be maximized or not."
         },
+    )
+    gradient_accumulation_steps: int = field(
+        default=4,
+        metadata={"help": "Number of update steps to accumulate before performing a backward/update pass."},
     )
