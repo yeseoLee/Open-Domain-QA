@@ -98,6 +98,16 @@ class DataTrainingArguments:
     use_faiss: bool = field(
         default=False, metadata={"help": "Whether to build with faiss"}
     )
+    retriever: str = field(
+        default="tfidf",
+        metadata={
+            "help": "The name of the retriever to use. Options include 'tfidf', 'bm25', 'elastic', etc."
+        },
+    )
+    index_name: str = field(
+        default="origin-wiki",
+        metadata={"help": "Define the name if index when using Elasticsearch"},
+    )
 
 
 @dataclass
@@ -227,5 +237,7 @@ class CustomTrainingArguments(TrainingArguments):
     )
     gradient_accumulation_steps: int = field(
         default=4,
-        metadata={"help": "Number of update steps to accumulate before performing a backward/update pass."},
+        metadata={
+            "help": "Number of update steps to accumulate before performing a backward/update pass."
+        },
     )
