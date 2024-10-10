@@ -87,7 +87,7 @@ def main():
 
 def run_mrc(
     data_args: DataTrainingArguments,
-    training_args: TrainingArguments,
+    training_args: CustomTrainingArguments,
     model_args: ModelArguments,
     datasets: DatasetDict,
     tokenizer,
@@ -220,7 +220,9 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            # return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+            return_token_type_ids=(
+                True if model_args.base_model.lower() == "bert" else False
+            ),  # RoBERTa는 BERT와 달리 token_type_ids(문장 간 구분을 위한 역할을 수행)를 사용하지 않음
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
@@ -271,7 +273,7 @@ def run_mrc(
         examples,
         features,
         predictions: Tuple[np.ndarray, np.ndarray],
-        training_args: TrainingArguments,
+        training_args: CustomTrainingArguments,
     ) -> EvalPrediction:
         # Post-processing: start logits과 end logits을 original context의 정답과 match시킵니다.
         predictions = postprocess_qa_predictions(
