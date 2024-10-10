@@ -5,6 +5,7 @@ tqdm
 pandas
 scikit-learn
 numpy==1.24.1
+rank_bm25
 
 wandb
 faiss-gpu
