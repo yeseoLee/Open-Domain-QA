@@ -26,7 +26,5 @@ outputs
 **/lightning_logs
 *.ckpt
 *.pt
-**.csv
 *.arrow
-**.json
 *.bin
