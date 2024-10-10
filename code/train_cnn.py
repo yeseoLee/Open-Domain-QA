@@ -19,10 +19,9 @@ from transformers import (
     TrainingArguments,
     set_seed
 )
-from utils_qa import check_no_error, postprocess_qa_predictions
+from utils_qa import check_no_error, postprocess_qa_predictions, set_seed
 from custom_model import CNN_RobertaForQuestionAnswering
 
-seed = 2024
 logger = logging.getLogger(__name__)
 
 
