@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from typing import NoReturn
 
-from arguments import DataTrainingArguments, ModelArguments
+from arguments import DataTrainingArguments, ModelArguments, CustomTrainingArguments
 from datasets import DatasetDict, load_from_disk, load_metric
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
@@ -31,7 +31,7 @@ def main():
     # --help flag 를 실행시켜서 확인할 수 도 있습니다.
 
     parser = HfArgumentParser(
-        (ModelArguments, DataTrainingArguments, TrainingArguments)
+        (ModelArguments, DataTrainingArguments, CustomTrainingArguments)
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     print(model_args.model_name_or_path)
@@ -87,7 +87,7 @@ def main():
 
 def run_mrc(
     data_args: DataTrainingArguments,
-    training_args: TrainingArguments,
+    training_args: CustomTrainingArguments,
     model_args: ModelArguments,
     datasets: DatasetDict,
     tokenizer,
