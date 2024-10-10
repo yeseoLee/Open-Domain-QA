@@ -5,7 +5,7 @@ import re
 import argparse
 from tqdm import tqdm
 import pandas as pd
-from elasticsearch import Elasticsearch
+from es import Elasticsearch
 
 warnings.filterwarnings("ignore")
 

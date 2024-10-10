@@ -6,7 +6,7 @@ import pandas as pd
 from datasets import Dataset, concatenate_datasets, load_from_disk
 from tqdm.auto import tqdm
 import argparse
-from elasticsearch.elastic_setting import *
+from es.elastic_setting import *
 
 
 @contextmanager
