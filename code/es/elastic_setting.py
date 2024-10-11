@@ -60,7 +60,7 @@ def preprocess(text):
 
 
 # 위키피디아 데이터 로드
-def load_data(dataset_path: str = "../data/wikipedia_documents.json"):
+def load_data(dataset_path: str = "../../data/wikipedia_documents.json"):
     with open(dataset_path, "r") as f:
         wiki = json.load(f)
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--dataset_path",
-        default="../data/wikipedia_documents.json",
+        default="../../data/wikipedia_documents.json",
         type=str,
         help="삽입할 데이터의 경로를 설정해주세요",
     )
