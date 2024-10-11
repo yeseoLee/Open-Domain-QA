@@ -1,0 +1,11 @@
+torch==1.13
+datasets==2.15.0
+transformers==4.25.1
+tqdm
+pandas
+scikit-learn
+numpy==1.24.1
+rank_bm25
+
+wandb
+faiss-gpu
