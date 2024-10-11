@@ -18,6 +18,8 @@ conda config --set auto_activate_base false
 source ~/.bashrc
 
 conda create -n main python=3.10.13 -y
+conda activate main && pip install -r requirements.txt
+conda deactivate
 
 sudo chmod -R 777 /opt/conda/env
 
