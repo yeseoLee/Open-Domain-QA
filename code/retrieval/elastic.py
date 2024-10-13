@@ -113,15 +113,16 @@ class ElasticRetrieval(Retrieval):
 
 
 class ElasticClient:
-    def __init__(self, index_name, setting_path, dataset_path, reset_index=False):
+    def __init__(self, index_name, setting_path, dataset_path, manual_mode=False):
         self.index_name = index_name
         self.setting_path = setting_path
         self.dataset_path = dataset_path
         self.client = self.connect()
-        if reset_index:
-            self.delete_index()
+        # 직접 메서드 호출해서 사용하는 경우
+        if manual_mode:
+            return
         if self.create_index():
-            self.insert_data(dataset_path=dataset_path)
+            self.insert_data()
 
     # elasticsearch 서버 세팅
     def connect(self):
@@ -155,7 +156,7 @@ class ElasticClient:
         print("Index deletion has been completed")
 
     # 인덱스에 데이터 삽입
-    def insert_data(self, dataset_path):
+    def insert_data(self):
         # 삽입할 데이터 전처리
         def _preprocess(text):
             text = re.sub(r"\n", " ", text)
@@ -185,7 +186,7 @@ class ElasticClient:
             ]
             return wiki_corpus
 
-        wiki_corpus = _load_data(dataset_path)
+        wiki_corpus = _load_data(self.dataset_path)
         for i, text in enumerate(tqdm(wiki_corpus)):
             try:
                 self.client.index(index=self.index_name, id=i, body=text)
