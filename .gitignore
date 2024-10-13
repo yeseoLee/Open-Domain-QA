@@ -29,3 +29,4 @@ outputs
 *.pt
 *.arrow
 *.bin
+*/nohup.out
