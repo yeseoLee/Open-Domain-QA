@@ -22,6 +22,8 @@ import os
 import sys
 import random
 from typing import Any, Optional, Tuple
+import time
+from contextlib import contextmanager
 import numpy as np
 import torch
 from arguments import DataTrainingArguments, ModelArguments, CustomTrainingArguments
@@ -36,6 +38,21 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def timer(name):
+    t0 = time.time()
+    yield
+    print(f"[{name}] done in {time.time() - t0:.3f} s")
+
+
+def setup_logging():
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s -    %(message)s",
+        datefmt="%Y/%m/%d %H:%M:%S",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
 
 
 def set_seed(seed: int = 42, deterministic: bool = True):
