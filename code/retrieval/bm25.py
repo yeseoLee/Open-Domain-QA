@@ -1,32 +1,21 @@
-import json
-import os
-import pickle
-import time
-from contextlib import contextmanager
 from typing import List, Optional, Tuple, Union
-
 import numpy as np
 import pandas as pd
-from datasets import Dataset, concatenate_datasets, load_from_disk
+from datasets import Dataset
 from rank_bm25 import BM25Okapi
 from tqdm.auto import tqdm
+from retrieval.base import Retrieval
+from utils.utils import timer
 
 
-@contextmanager
-def timer(name):
-    t0 = time.time()
-    yield
-    print(f"[{name}] done in {time.time() - t0:.3f} s")
-
-
-class RetrievalBM25:
+class BM25Retrieval(Retrieval):
     def __init__(
         self,
         tokenize_fn,
         data_path: Optional[str] = "../data/",
         context_path: Optional[str] = "wikipedia_documents.json",
+        use_title=True,
     ) -> None:
-
         """
         Arguments:
             tokenize_fn:
@@ -42,34 +31,23 @@ class RetrievalBM25:
             context_path:
                 Passage들이 묶여있는 파일명입니다.
 
-            data_path/context_path가 존재해야합니다.
+            use_title:
+                contexts에 title을 추가할지 정합니다.
 
         Summary:
             Passage 파일을 불러오고 BM25Okapi를 선언하는 기능을 합니다.
         """
-
-        self.data_path = data_path
-        with open(os.path.join(data_path, context_path), "r", encoding="utf-8") as f:
-            wiki = json.load(f)
-
-        # BM25 단독으로 사용하시는 경우, title을 추가해주시면 성능이 더 올라갑니다.
-        #self.contexts = list(dict.fromkeys([v["title"] + ": " + v["text"] for v in wiki.values()]))
-        self.contexts = list(dict.fromkeys([v["text"] for v in wiki.values()]))
-        print(f"Lengths of unique contexts : {len(self.contexts)}")
-        self.ids = list(range(len(self.contexts)))
+        super.__init__(tokenize_fn, data_path, context_path, use_title)
 
         # Tokenize
-        self.tokenize_fn = tokenize_fn
         self.tokenized_corpus = [self.tokenize_fn(doc) for doc in self.contexts]
 
         # Transform by vectorizer
         self.bm25 = BM25Okapi(self.tokenized_corpus, k1=1.5, b=0.75)
 
-
     def retrieve(
         self, query_or_dataset: Union[str, Dataset], topk: Optional[int] = 1
     ) -> Union[Tuple[List, List], pd.DataFrame]:
-
         """
         Arguments:
             query_or_dataset (Union[str, Dataset]):
@@ -128,9 +106,8 @@ class RetrievalBM25:
             cqas = pd.DataFrame(total)
             return cqas
 
-
     def get_relevant_doc(self, query: str, k: Optional[int] = 1) -> Tuple[List, List]:
-        
+
         with timer("transform"):
             tokenized_query = self.tokenize_fn(query)
 
@@ -144,11 +121,9 @@ class RetrievalBM25:
         doc_indices = sorted_result.tolist()[:k]
         return doc_score, doc_indices
 
-
     def get_relevant_doc_bulk(
         self, queries: List, k: Optional[int] = 1
     ) -> Tuple[List, List]:
-
         """
         Arguments:
             queries (List):
@@ -172,19 +147,29 @@ class RetrievalBM25:
             sorted_result = np.argsort(result.squeeze())[::-1]
             doc_scores.append(result.squeeze()[sorted_result].tolist()[:k])
             doc_indices.append(sorted_result.tolist()[:k])
-        
+
         return doc_scores, doc_indices
 
 
 if __name__ == "__main__":
-
     import argparse
+    from datasets import concatenate_datasets, load_from_disk
 
+    # Arguments
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--dataset_name", metavar="./data/train_dataset", type=str, help="")
-    parser.add_argument("--model_name_or_path", metavar="bert-base-multilingual-cased", type=str, help="")
+    parser.add_argument(
+        "--dataset_name", metavar="./data/train_dataset", type=str, help=""
+    )
+    parser.add_argument(
+        "--model_name_or_path",
+        metavar="bert-base-multilingual-cased",
+        type=str,
+        help="",
+    )
     parser.add_argument("--data_path", metavar="./data", type=str, help="")
-    parser.add_argument("--context_path", metavar="wikipedia_documents", type=str, help="")
+    parser.add_argument(
+        "--context_path", metavar="wikipedia_documents", type=str, help=""
+    )
     parser.add_argument("--retrieval_method", metavar="bm25", type=str, help="")
 
     args = parser.parse_args()
@@ -195,15 +180,19 @@ if __name__ == "__main__":
         [
             org_dataset["train"].flatten_indices(),
             org_dataset["validation"].flatten_indices(),
-        ])  # train dev 를 합친 4192 개 질문에 대해 모두 테스트
+        ]
+    )  # train dev 를 합친 4192 개 질문에 대해 모두 테스트
     print("*" * 40, "query dataset", "*" * 40)
     print(full_ds)
 
     from transformers import AutoTokenizer
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=False,)
+    tokenizer = AutoTokenizer.from_pretrained(
+        args.model_name_or_path,
+        use_fast=False,
+    )
 
-    retriever = RetrievalBM25(
+    retriever = BM25Retrieval(
         tokenize_fn=tokenizer.tokenize,
         data_path=args.data_path,
         context_path=args.context_path,

@@ -4,7 +4,7 @@ from torch import nn
 from transformers import TrainingArguments, AutoModelForQuestionAnswering
 from transformers.trainer_utils import IntervalStrategy
 from retrieval.tdidf import TfidfRetrieval
-from retrieval.basic import Retrieval
+from retrieval.base import Retrieval
 
 
 @dataclass
