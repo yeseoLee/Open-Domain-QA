@@ -4,11 +4,9 @@ Open-Domain Question Answering 을 수행하는 inference 코드 입니다.
 """
 
 import logging
-import sys
 from typing import Callable, Dict, List, NoReturn, Tuple
-
 import numpy as np
-from arguments import DataTrainingArguments, ModelArguments, CustomTrainingArguments
+from arguments import ModelArguments, DataTrainingArguments
 from datasets import (
     Dataset,
     DatasetDict,
@@ -18,40 +16,32 @@ from datasets import (
     load_from_disk,
     load_metric,
 )
-from retrieval import SparseRetrieval
-from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
-    AutoModelForQuestionAnswering,
     AutoTokenizer,
     DataCollatorWithPadding,
     EvalPrediction,
-    HfArgumentParser,
     TrainingArguments,
 )
-from utils_qa import check_no_error, postprocess_qa_predictions, set_seed
+from utils.trainer_qa import QuestionAnsweringTrainer
+from utils.utils_qa import check_no_error, postprocess_qa_predictions, set_seed
+from utils.utils import setup_logging
 
 logger = logging.getLogger(__name__)
 
 
-def main():
-    parser = HfArgumentParser(
-        (ModelArguments, DataTrainingArguments, CustomTrainingArguments)
-    )
-    model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
+def load_mrc_resources(
+    model_args: ModelArguments,
+    data_args: DataTrainingArguments,
+    training_args: TrainingArguments,
+):
     # 가능한 arguments들은 arguments.py에서 확인하거나 --help flag로 확인
     training_args.do_train = True
-
     print(f"model is from {model_args.model_name_or_path}")
     print(f"data is from {data_args.dataset_name}")
 
     # logging 설정
-    logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s -    %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-        handlers=[logging.StreamHandler(sys.stdout)],
-    )
+    setup_logging()
 
     # verbosity 설정 : Transformers logger의 정보로 사용합니다 (on main process only)
     logger.info("Training/evaluation parameters %s", training_args)
@@ -78,27 +68,23 @@ def main():
             else model_args.model_name_or_path
         ),
         # 'use_fast' True: rust로 구현된 tokenizer / False: python으로 구현된 tokenizer
-        # rust version이 비교적 속도가 빠름
         use_fast=True,
     )
-    model = AutoModelForQuestionAnswering.from_pretrained(
+    model = model_args.model_class.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
         config=config,
     )
 
-    # True일 경우 : run passage retrieval
-    if data_args.eval_retrieval:
-        datasets = run_sparse_retrieval(
-            tokenizer.tokenize,
-            datasets,
-            training_args,
-            data_args,
-        )
+    # run passage retrieval
+    datasets = run_sparse_retrieval(
+        tokenizer.tokenize,
+        datasets,
+        training_args,
+        data_args,
+    )
 
-    # eval or predict mrc model
-    if training_args.do_eval or training_args.do_predict:
-        run_mrc(data_args, training_args, model_args, datasets, tokenizer, model)
+    return data_args, training_args, model_args, datasets, tokenizer, model
 
 
 def run_sparse_retrieval(
@@ -111,10 +97,15 @@ def run_sparse_retrieval(
 ) -> DatasetDict:
 
     # Query에 맞는 Passage들을 Retrieval 합니다.
-    retriever = SparseRetrieval(
-        tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path
+    retriever = data_args.retriever_class(
+        tokenize_fn=tokenize_fn,
+        data_path=data_path,
+        context_path=context_path,
+        setting_path=data_args.setting_path,
+        index_name=data_args.index_name,
     )
-    retriever.get_sparse_embedding()
+    # if not isinstance(retriever, Retrieval):
+    #     raise TypeError("retrieverz arguments must be Retrieval class")
 
     if data_args.use_faiss:
         retriever.build_faiss(num_clusters=data_args.num_clusters)
@@ -163,6 +154,9 @@ def run_mrc(
     tokenizer,
     model,
 ) -> NoReturn:
+    # eval or predict mrc model
+    if not (training_args.do_eval or training_args.do_predict):
+        return
 
     # eval 혹은 prediction에서만 사용함
     column_names = datasets["validation"].column_names
@@ -190,9 +184,7 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            return_token_type_ids=(
-                True if model_args.base_model.lower() == "bert" else False
-            ),  # RoBERTa는 BERT와 달리 token_type_ids(문장 간 구분을 위한 역할을 수행)를 사용하지 않음
+            return_token_type_ids=model_args.token_type_ids,
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
@@ -307,4 +299,6 @@ def run_mrc(
 
 
 if __name__ == "__main__":
-    main()
+    from utils.utils_qa import load_arguments
+
+    run_mrc(load_mrc_resources(load_arguments()))
