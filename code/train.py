@@ -1,42 +1,35 @@
 import logging
 import os
-import sys
 from typing import Dict, NoReturn, Tuple
 import numpy as np
-from arguments import DataTrainingArguments, ModelArguments, CustomTrainingArguments
+from arguments import ModelArguments, DataTrainingArguments
 from datasets import DatasetDict, load_from_disk, load_metric
-from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
-    AutoModelForQuestionAnswering,
     AutoTokenizer,
     DataCollatorWithPadding,
     EvalPrediction,
-    HfArgumentParser,
     TrainingArguments,
 )
-from utils_qa import check_no_error, postprocess_qa_predictions, set_seed
+from utils.trainer_qa import QuestionAnsweringTrainer
+from utils.utils_qa import check_no_error, postprocess_qa_predictions, set_seed
+from utils.utils import setup_logging
+
 
 logger = logging.getLogger(__name__)
 
 
-def main():
-    parser = HfArgumentParser(
-        (ModelArguments, DataTrainingArguments, CustomTrainingArguments)
-    )
-    model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
+def load_mrc_resources(
+    model_args: ModelArguments,
+    data_args: DataTrainingArguments,
+    training_args: TrainingArguments,
+):
     # 가능한 arguments들은 arguments.py에서 확인하거나 --help flag로 확인
-
     print(f"model is from {model_args.model_name_or_path}")
     print(f"data is from {data_args.dataset_name}")
 
     # logging 설정
-    logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s -    %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-        handlers=[logging.StreamHandler(sys.stdout)],
-    )
+    setup_logging()
 
     # verbosity 설정 : Transformers logger의 정보로 사용합니다 (on main process only)
     logger.info("Training/evaluation parameters %s", training_args)
@@ -63,36 +56,29 @@ def main():
             else model_args.model_name_or_path
         ),
         # 'use_fast' True: rust로 구현된 tokenizer / False: python으로 구현된 tokenizer
-        # rust version이 비교적 속도가 빠름
         use_fast=True,
     )
-    model = AutoModelForQuestionAnswering.from_pretrained(
+
+    model = model_args.model_class.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
         config=config,
     )
 
-    print(
-        type(training_args),
-        type(model_args),
-        type(datasets),
-        type(tokenizer),
-        type(model),
-    )
-
-    # train or eval mrc model
-    if training_args.do_train or training_args.do_eval:
-        run_mrc(data_args, training_args, model_args, datasets, tokenizer, model)
+    return data_args, training_args, model_args, datasets, tokenizer, model
 
 
 def run_mrc(
     data_args: DataTrainingArguments,
-    training_args: CustomTrainingArguments,
+    training_args: TrainingArguments,
     model_args: ModelArguments,
     datasets: DatasetDict,
     tokenizer,
     model,
 ) -> NoReturn:
+    # train or eval mrc model
+    if not (training_args.do_train or training_args.do_eval):
+        return
 
     # dataset을 전처리합니다.
     # training과 evaluation에서 사용되는 전처리는 아주 조금 다른 형태를 가집니다.
@@ -126,9 +112,7 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            return_token_type_ids=(
-                True if model_args.base_model.lower() == "bert" else False
-            ),  # RoBERTa는 BERT와 달리 token_type_ids(문장 간 구분을 위한 역할을 수행)를 사용하지 않음
+            return_token_type_ids=model_args.token_type_ids,
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
@@ -220,9 +204,7 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            return_token_type_ids=(
-                True if model_args.base_model.lower() == "bert" else False
-            ),  # RoBERTa는 BERT와 달리 token_type_ids(문장 간 구분을 위한 역할을 수행)를 사용하지 않음
+            return_token_type_ids=model_args.token_type_ids,
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
@@ -273,7 +255,7 @@ def run_mrc(
         examples,
         features,
         predictions: Tuple[np.ndarray, np.ndarray],
-        training_args: CustomTrainingArguments,
+        training_args: TrainingArguments,
     ) -> EvalPrediction:
         # Post-processing: start logits과 end logits을 original context의 정답과 match시킵니다.
         predictions = postprocess_qa_predictions(
@@ -359,4 +341,6 @@ def run_mrc(
 
 
 if __name__ == "__main__":
-    main()
+    from utils.utils_qa import load_arguments
+
+    run_mrc(load_mrc_resources(load_arguments()))
