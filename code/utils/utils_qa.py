@@ -19,15 +19,20 @@ import collections
 import json
 import logging
 import os
+import sys
 import random
 from typing import Any, Optional, Tuple
-
 import numpy as np
 import torch
-from arguments import DataTrainingArguments
+from arguments import DataTrainingArguments, ModelArguments, CustomTrainingArguments
 from datasets import DatasetDict
 from tqdm.auto import tqdm
-from transformers import PreTrainedTokenizerFast, TrainingArguments, is_torch_available
+from transformers import (
+    PreTrainedTokenizerFast,
+    TrainingArguments,
+    HfArgumentParser,
+    is_torch_available,
+)
 from transformers.trainer_utils import get_last_checkpoint
 
 logger = logging.getLogger(__name__)
@@ -387,3 +392,20 @@ def check_no_error(
     if "validation" not in datasets:
         raise ValueError("--do_eval requires a validation dataset")
     return last_checkpoint, max_seq_length
+
+
+def load_arguments() -> (
+    Tuple[ModelArguments, DataTrainingArguments, CustomTrainingArguments]
+):
+    parser = HfArgumentParser(
+        (ModelArguments, DataTrainingArguments, TrainingArguments)
+    )
+    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
+        # If we pass only one argument to the script and it's the path to a json file,
+        # let's parse it to get our arguments.
+        model_args, data_args, training_args = parser.parse_json_file(
+            json_file=os.path.abspath(sys.argv[1])
+        )
+    else:
+        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    return model_args, data_args, training_args
