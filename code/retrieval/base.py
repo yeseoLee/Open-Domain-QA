@@ -1,16 +1,16 @@
 import json
 import os
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Callable
 from datasets import Dataset
 
 
 class Retrieval:
     def __init__(
         self,
-        tokenize_fn,
-        data_path: Optional[str],
-        context_path: Optional[str],
-        use_title: Optional[bool],
+        tokenize_fn: Optional[Callable] = None,
+        data_path: Optional[str] = None,
+        context_path: Optional[str] = None,
+        use_title: Optional[bool] = None,
         index_name: Optional[str] = None,
         setting_path: Optional[str] = None,
     ):

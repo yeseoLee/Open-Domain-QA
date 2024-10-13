@@ -4,12 +4,13 @@ from datasets import Dataset
 from tqdm.auto import tqdm
 from retrieval.base import Retrieval
 from es.elastic_setting import *
-from utils.utils import timer
+from utils.utils_qa import timer
 
 
 class ElasticRetrieval(Retrieval):
-    def __init__(self, INDEX_NAME):
-        self.es, self.index_name = connect(index_name=INDEX_NAME)
+
+    def __init__(self, index_name, *args, **kwargs):
+        self.es, self.index_name = connect(index_name=index_name)
 
     def retrieve(
         self, query_or_dataset: Union[str, Dataset], topk: Optional[int] = 1

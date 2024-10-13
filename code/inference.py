@@ -23,7 +23,9 @@ from transformers import (
     EvalPrediction,
     TrainingArguments,
 )
-from utils.trainer_qa import *
+
+from utils.trainer_qa import QuestionAnsweringTrainer
+from utils.utils_qa import *
 
 logger = logging.getLogger(__name__)
 

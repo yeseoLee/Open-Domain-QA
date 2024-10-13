@@ -8,7 +8,7 @@ from datasets import Dataset
 from sklearn.feature_extraction.text import TfidfVectorizer
 from tqdm.auto import tqdm
 from retrieval.base import Retrieval
-from utils.utils import timer
+from utils.utils_qa import timer
 
 
 class TfidfRetrieval(Retrieval):
@@ -18,6 +18,8 @@ class TfidfRetrieval(Retrieval):
         data_path: Optional[str] = "../data/",
         context_path: Optional[str] = "wikipedia_documents.json",
         use_title: Optional[bool] = False,
+        *args,
+        **kwargs,
     ) -> NoReturn:
         """
         Arguments:
@@ -39,7 +41,7 @@ class TfidfRetrieval(Retrieval):
         Summary:
             Passage 파일을 불러오고 TfidfVectorizer를 선언하는 기능을 합니다.
         """
-        super.__init__(tokenize_fn, data_path, context_path, use_title)
+        super().__init__(tokenize_fn, data_path, context_path, use_title)
 
         # Transform by vectorizer
         self.tfidfv = TfidfVectorizer(
@@ -50,6 +52,7 @@ class TfidfRetrieval(Retrieval):
 
         self.p_embedding = None  # get_sparse_embedding()로 생성합니다
         self.indexer = None  # build_faiss()로 생성합니다.
+        self.get_sparse_embedding()
 
     def get_sparse_embedding(self) -> NoReturn:
         """

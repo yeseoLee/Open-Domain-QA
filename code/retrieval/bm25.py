@@ -5,7 +5,7 @@ from datasets import Dataset
 from rank_bm25 import BM25Okapi
 from tqdm.auto import tqdm
 from retrieval.base import Retrieval
-from utils.utils import timer
+from utils.utils_qa import timer
 
 
 class BM25Retrieval(Retrieval):
@@ -15,6 +15,8 @@ class BM25Retrieval(Retrieval):
         data_path: Optional[str] = "../data/",
         context_path: Optional[str] = "wikipedia_documents.json",
         use_title=True,
+        *args,
+        **kwargs,
     ) -> None:
         """
         Arguments:
@@ -37,7 +39,7 @@ class BM25Retrieval(Retrieval):
         Summary:
             Passage 파일을 불러오고 BM25Okapi를 선언하는 기능을 합니다.
         """
-        super.__init__(tokenize_fn, data_path, context_path, use_title)
+        super().__init__(tokenize_fn, data_path, context_path, use_title)
 
         # Tokenize
         self.tokenized_corpus = [self.tokenize_fn(doc) for doc in self.contexts]
