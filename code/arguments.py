@@ -109,7 +109,7 @@ class DataTrainingArguments:
         metadata={"help": "Define the name if index when using Elasticsearch"},
     )
     setting_path: str = field(
-        default="elastic_setting.json",
+        default="../config/elastic_setting.json",
         metadata={"help": "set setting_path if index when using Elasticsearch"},
     )
 
