@@ -12,8 +12,7 @@ from transformers import (
     TrainingArguments,
 )
 from utils.trainer_qa import QuestionAnsweringTrainer
-from utils.utils_qa import check_no_error, postprocess_qa_predictions, set_seed
-from utils.utils import setup_logging
+from utils.utils_qa import *
 
 
 logger = logging.getLogger(__name__)
@@ -59,7 +58,8 @@ def load_mrc_resources(
         use_fast=True,
     )
 
-    model = model_args.model_class.from_pretrained(
+    model_class = model_class_from_string(model_args.model_class)
+    model = model_class.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
         config=config,
@@ -343,4 +343,4 @@ def run_mrc(
 if __name__ == "__main__":
     from utils.utils_qa import load_arguments
 
-    run_mrc(load_mrc_resources(load_arguments()))
+    run_mrc(*load_mrc_resources(*load_arguments()))

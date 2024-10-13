@@ -426,3 +426,29 @@ def load_arguments() -> (
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     return model_args, data_args, training_args
+
+
+def model_class_from_string(class_name: str):
+    if class_name == "CNN_RobertaForQuestionAnswering":
+        from custom_model import CNN_RobertaForQuestionAnswering
+
+        return CNN_RobertaForQuestionAnswering
+    else:
+        from transformers import AutoModelForQuestionAnswering
+
+        return AutoModelForQuestionAnswering
+
+
+def retrieve_class_from_string(class_name: str):
+    if class_name == "BM25Retrieval":
+        from retrieval.bm25 import BM25Retrieval
+
+        return BM25Retrieval
+    elif class_name == "ElasticRetrieval":
+        from retrieval.elastic import ElasticRetrieval
+
+        return ElasticRetrieval
+    else:
+        from retrieval.tdidf import TfidfRetrieval
+
+        return TfidfRetrieval

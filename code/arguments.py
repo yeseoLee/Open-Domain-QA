@@ -1,10 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, Union
-from torch import nn
-from transformers import TrainingArguments, AutoModelForQuestionAnswering
+from transformers import TrainingArguments
 from transformers.trainer_utils import IntervalStrategy
-from retrieval.tdidf import TfidfRetrieval
-from retrieval.base import Retrieval
 
 
 @dataclass
@@ -31,8 +28,8 @@ class ModelArguments:
             "help": "Pretrained tokenizer name or path if not the same as model_name"
         },
     )
-    model_class: Optional[nn.Module] = field(
-        default=AutoModelForQuestionAnswering,
+    model_class: str = field(
+        default="AutoModelForQuestionAnswering",
         metadata={"help": "model class. default: AutoModelForQuestionAnswering"},
     )
     token_type_ids: bool = field(
@@ -101,8 +98,8 @@ class DataTrainingArguments:
     use_faiss: bool = field(
         default=False, metadata={"help": "Whether to build with faiss"}
     )
-    retriever_class: Retrieval = field(
-        default=TfidfRetrieval,
+    retriever_class: str = field(
+        default="",
         metadata={
             "help": "The name of the retriever to use. Options include 'TfidfRetrieval', 'BM25Retrieval', 'ElasticRetrieval', etc."
         },
@@ -110,6 +107,10 @@ class DataTrainingArguments:
     index_name: str = field(
         default="origin-wiki",
         metadata={"help": "Define the name if index when using Elasticsearch"},
+    )
+    setting_path: str = field(
+        default="elastic_setting.json",
+        metadata={"help": "set setting_path if index when using Elasticsearch"},
     )
 
 
