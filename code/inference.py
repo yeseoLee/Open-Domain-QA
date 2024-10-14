@@ -6,7 +6,7 @@ Open-Domain Question Answering 을 수행하는 inference 코드 입니다.
 import logging
 from typing import Callable, Dict, List, NoReturn, Tuple
 import numpy as np
-from arguments import ModelArguments, DataTrainingArguments
+from arguments import ModelArguments, DataTrainingArguments, CustomTrainingArguments
 from datasets import (
     Dataset,
     DatasetDict,
@@ -21,7 +21,6 @@ from transformers import (
     AutoTokenizer,
     DataCollatorWithPadding,
     EvalPrediction,
-    TrainingArguments,
 )
 
 from utils.trainer_qa import QuestionAnsweringTrainer
@@ -33,7 +32,7 @@ logger = logging.getLogger(__name__)
 def load_mrc_resources(
     model_args: ModelArguments,
     data_args: DataTrainingArguments,
-    training_args: TrainingArguments,
+    training_args: CustomTrainingArguments,
 ):
     # 가능한 arguments들은 arguments.py에서 확인하거나 --help flag로 확인
     training_args.do_train = True
@@ -91,7 +90,7 @@ def load_mrc_resources(
 def run_sparse_retrieval(
     tokenize_fn: Callable[[str], List[str]],
     datasets: DatasetDict,
-    training_args: TrainingArguments,
+    training_args: CustomTrainingArguments,
     data_args: DataTrainingArguments,
     data_path: str = "../data",
     context_path: str = "wikipedia_documents.json",
@@ -150,7 +149,7 @@ def run_sparse_retrieval(
 
 def run_mrc(
     data_args: DataTrainingArguments,
-    training_args: TrainingArguments,
+    training_args: CustomTrainingArguments,
     model_args: ModelArguments,
     datasets: DatasetDict,
     tokenizer,
@@ -236,7 +235,7 @@ def run_mrc(
         examples,
         features,
         predictions: Tuple[np.ndarray, np.ndarray],
-        training_args: TrainingArguments,
+        training_args: CustomTrainingArguments,
     ) -> EvalPrediction:
         # Post-processing: start logits과 end logits을 original context의 정답과 match시킵니다.
         predictions = postprocess_qa_predictions(

@@ -415,7 +415,7 @@ def load_arguments() -> (
     Tuple[ModelArguments, DataTrainingArguments, CustomTrainingArguments]
 ):
     parser = HfArgumentParser(
-        (ModelArguments, DataTrainingArguments, TrainingArguments)
+        (ModelArguments, DataTrainingArguments, CustomTrainingArguments)
     )
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
