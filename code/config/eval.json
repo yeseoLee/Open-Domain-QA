@@ -1,0 +1,7 @@
+{
+    "model_name_or_path": "./models/bert/",
+    "output_dir": "./outputs/bert",
+    "dataset_name": "../data/train_dataset",
+    "overwrite_output_dir": true,
+    "do_eval": true
+}

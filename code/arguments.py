@@ -16,12 +16,6 @@ class ModelArguments:
             "help": "Path to pretrained model or model identifier from huggingface.co/models"
         },
     )
-    base_model: str = field(
-        default="bert",
-        metadata={
-            "help": "The base model to use for training and inference. Options include 'bert', 'roberta', 'bart', etc."
-        },
-    )
     config_name: Optional[str] = field(
         default=None,
         metadata={
@@ -32,6 +26,16 @@ class ModelArguments:
         default=None,
         metadata={
             "help": "Pretrained tokenizer name or path if not the same as model_name"
+        },
+    )
+    model_class: str = field(
+        default="AutoModelForQuestionAnswering",
+        metadata={"help": "model class. default: AutoModelForQuestionAnswering"},
+    )
+    token_type_ids: bool = field(
+        default=False,
+        metadata={
+            "help": "model이 BERT이면 True, RoBERTa 등은 False. RoBERTa는 BERT와 달리 token_type_ids(문장 간 구분을 위한 역할을 수행)를 사용하지 않음"
         },
     )
 
@@ -82,10 +86,6 @@ class DataTrainingArguments:
             "and end predictions are not conditioned on one another."
         },
     )
-    eval_retrieval: bool = field(
-        default=True,
-        metadata={"help": "Whether to run passage retrieval using sparse embedding."},
-    )
     num_clusters: int = field(
         default=64, metadata={"help": "Define how many clusters to use for faiss."}
     )
@@ -98,15 +98,19 @@ class DataTrainingArguments:
     use_faiss: bool = field(
         default=False, metadata={"help": "Whether to build with faiss"}
     )
-    retriever: str = field(
-        default="tfidf",
+    retriever_class: str = field(
+        default="",
         metadata={
-            "help": "The name of the retriever to use. Options include 'tfidf', 'bm25', 'elastic', etc."
+            "help": "The name of the retriever to use. Options include 'TfidfRetrieval', 'BM25Retrieval', 'ElasticRetrieval', etc."
         },
     )
     index_name: str = field(
         default="origin-wiki",
         metadata={"help": "Define the name if index when using Elasticsearch"},
+    )
+    setting_path: str = field(
+        default="../config/elastic_setting.json",
+        metadata={"help": "set setting_path if index when using Elasticsearch"},
     )
 
 

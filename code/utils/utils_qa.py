@@ -19,18 +19,40 @@ import collections
 import json
 import logging
 import os
+import sys
 import random
 from typing import Any, Optional, Tuple
-
+import time
+from contextlib import contextmanager
 import numpy as np
 import torch
-from arguments import DataTrainingArguments
+from arguments import DataTrainingArguments, ModelArguments, CustomTrainingArguments
 from datasets import DatasetDict
 from tqdm.auto import tqdm
-from transformers import PreTrainedTokenizerFast, TrainingArguments, is_torch_available
+from transformers import (
+    PreTrainedTokenizerFast,
+    TrainingArguments,
+    HfArgumentParser,
+    is_torch_available,
+)
 from transformers.trainer_utils import get_last_checkpoint
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def timer(name):
+    t0 = time.time()
+    yield
+    print(f"[{name}] done in {time.time() - t0:.3f} s")
+
+
+def setup_logging():
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s -    %(message)s",
+        datefmt="%Y/%m/%d %H:%M:%S",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
 
 
 def set_seed(seed: int = 42, deterministic: bool = True):
@@ -387,3 +409,46 @@ def check_no_error(
     if "validation" not in datasets:
         raise ValueError("--do_eval requires a validation dataset")
     return last_checkpoint, max_seq_length
+
+
+def load_arguments() -> (
+    Tuple[ModelArguments, DataTrainingArguments, CustomTrainingArguments]
+):
+    parser = HfArgumentParser(
+        (ModelArguments, DataTrainingArguments, CustomTrainingArguments)
+    )
+    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
+        # If we pass only one argument to the script and it's the path to a json file,
+        # let's parse it to get our arguments.
+        model_args, data_args, training_args = parser.parse_json_file(
+            json_file=os.path.abspath(sys.argv[1])
+        )
+    else:
+        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    return model_args, data_args, training_args
+
+
+def model_class_from_string(class_name: str):
+    if class_name == "CNN_RobertaForQuestionAnswering":
+        from custom_model import CNN_RobertaForQuestionAnswering
+
+        return CNN_RobertaForQuestionAnswering
+    else:
+        from transformers import AutoModelForQuestionAnswering
+
+        return AutoModelForQuestionAnswering
+
+
+def retrieve_class_from_string(class_name: str):
+    if class_name == "BM25Retrieval":
+        from retrieval.bm25 import BM25Retrieval
+
+        return BM25Retrieval
+    elif class_name == "ElasticRetrieval":
+        from retrieval.elastic import ElasticRetrieval
+
+        return ElasticRetrieval
+    else:
+        from retrieval.tdidf import TfidfRetrieval
+
+        return TfidfRetrieval

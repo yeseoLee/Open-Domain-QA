@@ -1,0 +1,10 @@
+{
+    "model_name_or_path": "./models/bert/",
+    "output_dir": "./outputs/bert",
+    "dataset_name": "../data/test_dataset/",
+    "num_train_epochs": 1,
+    "per_device_eval_batch_size": 16,
+    "retriever_class": "ElasticRetrieval",
+    "overwrite_output_dir": true,
+    "do_predict": true
+}
