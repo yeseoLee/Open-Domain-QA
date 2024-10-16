@@ -16,7 +16,7 @@ def train_to_eval(
     # train output을 eval model로 이동
     model_args.model_name_or_path = training_args.output_dir
     # eval output은 model이 아닌 prediction
-    training_args.output_dir = training_args.output_dir.replace("models/", "output/")
+    training_args.output_dir = training_args.output_dir.replace("models/", "outputs/")
     # do_train -> do_eval
     training_args.do_train = False
     training_args.do_eval = True
@@ -46,7 +46,7 @@ def main():
     model_args, data_args, training_args = train_to_eval(
         model_args, data_args, training_args
     )
-    # train.run_mrc(*train.load_mrc_resources(model_args, data_args, training_args))
+    train.run_mrc(*train.load_mrc_resources(model_args, data_args, training_args))
     inference.run_mrc(
         *inference.load_mrc_resources(model_args, data_args, training_args)
     )
