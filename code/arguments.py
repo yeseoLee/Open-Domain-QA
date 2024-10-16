@@ -99,7 +99,7 @@ class DataTrainingArguments:
         default=False, metadata={"help": "Whether to build with faiss"}
     )
     retriever_class: str = field(
-        default="",
+        default="TfidfRetrieval",
         metadata={
             "help": "The name of the retriever to use. Options include 'TfidfRetrieval', 'BM25Retrieval', 'ElasticRetrieval', etc."
         },
@@ -109,7 +109,7 @@ class DataTrainingArguments:
         metadata={"help": "Define the name if index when using Elasticsearch"},
     )
     setting_path: str = field(
-        default="../config/elastic_setting.json",
+        default="./config/elastic_setting.json",
         metadata={"help": "set setting_path if index when using Elasticsearch"},
     )
 

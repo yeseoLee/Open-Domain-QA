@@ -1,0 +1,37 @@
+{
+    "model_name_or_path": "klue/roberta-small",
+    "model_class":"AutoModelForQuestionAnswering",
+    "token_type_ids": false,
+
+    "dataset_name": "../data/train_dataset",
+    "max_seq_length": 384,
+    "pad_to_max_length": false,
+    "doc_stride": 128,
+    "max_answer_length": 30,
+
+    "top_k_retrieval": 10,
+    "retriever_class": "ElasticRetrieval",
+    "index_name": "origin-wiki",
+    "setting_path": "./config/elastic_setting.json",
+    
+    "output_dir": "./models/roberta_small",
+    "overwrite_output_dir": true,
+    "do_train": true,
+    "do_eval": false,
+    "do_predict": false,
+    
+    "per_device_train_batch_size": 16,
+    "per_device_eval_batch_size": 16,
+    "learning_rate": 5e-5,
+    "weight_decay": 0.0,
+    "num_train_epochs": 1,
+    "warmup_ratio": 0.0,
+    "gradient_accumulation_steps": 1,
+
+    "save_strategy": "epoch",
+    "eval_strategy": "epoch",
+    "logging_steps": 500,
+    "save_steps": 500,
+    "eval_steps": 500,
+    "save_total_limit": 5
+}
