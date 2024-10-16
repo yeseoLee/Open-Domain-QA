@@ -86,4 +86,4 @@ if __name__ == "__main__":
     csv_to_arrow(args.train_filename, args.valid_filename, args.output_dir)
     modify_filename(args.output_dir)
 
-    # python converter.py --train_filename train_dataset.csv --valid_filename train_validation_dataset.csv --output_dir train_dataset_v0
+    # python csv_to_arrow.py --train_filename train_dataset.csv --valid_filename train_validation_dataset.csv --output_dir train_dataset_v0
