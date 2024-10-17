@@ -448,6 +448,10 @@ def retrieve_class_from_string(class_name: str):
         from retrieval.elastic import ElasticRetrieval
 
         return ElasticRetrieval
+    elif class_name == "DenseRetrieval":
+        from code.retrieval.dense_backup import DenseRetrieval
+
+        return DenseRetrieval
     else:
         from retrieval.tdidf import TfidfRetrieval
 
