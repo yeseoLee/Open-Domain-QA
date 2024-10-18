@@ -6,7 +6,7 @@ from difflib import SequenceMatcher
 #https://colab.research.google.com/drive/1jkeoeG7atT7kxbrwT_HZLNahWwXyc99t#scrollTo=d12Ilrzwhzr6
 """
 1. 파일 준비:
-   - 'ensemble/results(soft)' 안에 앙상블하고 싶은 모든 'nbest_predictions.json' 파일들을 넣습니다.
+   - 'ensemble/results_soft' 안에 앙상블하고 싶은 모든 'nbest_predictions.json' 파일들을 넣습니다.
 
 2. 유사도 설정:
    - 'similar' 함수에서 유사도 임계값을 조정합니다.
@@ -34,7 +34,7 @@ def similar(a, b):
     return SequenceMatcher(None, a, b).ratio() > 0.8
 
 # 예측 파일들을 로드합니다.
-prediction_files = glob("./results(soft)/*.json")
+prediction_files = glob("./results_soft/*.json")
 ensemble_predictions = defaultdict(list)
 
 # 각 prediction 파일을 읽어와서 ensemble_predictions에 추가합니다.
