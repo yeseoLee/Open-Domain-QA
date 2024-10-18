@@ -5,7 +5,7 @@ from collections import Counter, OrderedDict
 # 하드 보팅 앙상블 사용 방법
 
 1. 파일 준비:
-   - 'ensemble/results(hard)' 폴더 안에 앙상블하고 싶은 모든 'predictions.json' 파일들을 넣습니다.
+   - 'ensemble/results_hard' 폴더 안에 앙상블하고 싶은 모든 'predictions.json' 파일들을 넣습니다.
 
 2. 우선순위 설정:
    - 'priority_order' 리스트에 모델의 우선순위를 정의합니다.
@@ -29,7 +29,7 @@ from collections import Counter, OrderedDict
 우선순위 설정에 따라 최종 결과가 크게 달라질 수 있습니다.
 """
 # 우선순위 직접 정의
-priority_order = ['predictions(bb+ad5).json', 'predictions(bb+s1).json', 'predictions(bb+s2).json']
+priority_order = ['predictions(1).json', 'predictions(2).json', 'predictions(3).json']
 
 def hard_voting_with_priority(predictions, priority_order):
     result = {}
@@ -62,7 +62,7 @@ def hard_voting_with_priority(predictions, priority_order):
     return result
 
 # 예측 파일들을 로드합니다.
-prediction_files = glob("./results(hard)/*.json")
+prediction_files = glob("./results_hard/*.json")
 predictions = []
 
 # 각 prediction 파일을 읽어와서 predictions 리스트에 추가합니다.
