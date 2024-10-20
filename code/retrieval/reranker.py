@@ -11,7 +11,7 @@ def rerank(
     df: pd.DataFrame,
     topk: int = 1,
     model_path: str = "Dongjin-kr/ko-reranker",
-    batch_size: int = 16,
+    batch_size: int = 128,
     max_length: int = 512,
 ):
     def exp_normalize(x):
@@ -74,8 +74,12 @@ if __name__ == "__main__":
 
     # Arguments
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--df_path", default="es_topk_20.csv", type=str, help="")
+    parser.add_argument(
+        "--df_path", default="../data/retriever/es_topk_20.csv", type=str, help=""
+    )
     parser.add_argument("--topk", default=5, type=int, help="")
+    parser.add_argument("--batch_size", default=128, type=int, help="")
+    parser.add_argument("--prefix", default="es_20", type=str, help="")
 
     args = parser.parse_args()
     print(args)
@@ -86,6 +90,6 @@ if __name__ == "__main__":
         lambda x: ast.literal_eval(x)
     )
 
-    df_rerank = rerank(df=df_for_rerank, topk=args.topk)
-    df_rerank.to_csv(f"df_rerank_{args.topk}.csv", index=False)
+    df_rerank = rerank(df=df_for_rerank, topk=args.topk, batch_size=args.batch_size)
+    df_rerank.to_csv(f"{args.prefix}_rerank_{args.topk}.csv", index=False)
     print("rerank 결과 저장됨")
