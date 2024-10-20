@@ -26,6 +26,35 @@ class ElasticRetrieval(Retrieval):
             dataset_path=os.path.join(data_path, context_path),
         )
 
+    def retrieve_for_reranker(
+        self, query_or_dataset: Dataset, topk: Optional[int] = 1
+    ) -> pd.DataFrame:
+        # Retrieve한 Passage를 pd.DataFrame으로 반환합니다.
+        total = []
+        with timer("query exhaustive search"):
+            doc_scores, doc_indices, docs = self.get_relevant_doc_bulk(
+                query_or_dataset["question"], k=topk
+            )
+
+        for idx, example in enumerate(
+            tqdm(query_or_dataset, desc="Sparse retrieval with Elasticsearch: ")
+        ):
+            retrieved_context = []
+            for i in range(min(topk, len(docs[idx]))):
+                retrieved_context.append(docs[idx][i]["_source"]["document_text"])
+
+            tmp = {
+                "question": example["question"],
+                "id": example["id"],
+                "context": retrieved_context,
+            }
+            if "context" in example.keys() and "answers" in example.keys():
+                # validation 데이터를 사용하면 ground_truth context와 answer도 반환합니다.
+                tmp["original_context"] = example["context"]
+                tmp["answers"] = example["answers"]
+            total.append(tmp)
+        return pd.DataFrame(total)
+
     def retrieve(
         self, query_or_dataset: Union[str, Dataset], topk: Optional[int] = 1
     ) -> Union[Tuple[List, List], pd.DataFrame]:
@@ -210,8 +239,11 @@ class ElasticClient:
 
 
 if __name__ == "__main__":
+    import sys
     import argparse
     from datasets import concatenate_datasets, load_from_disk
+
+    sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
     # Arguments
     parser = argparse.ArgumentParser(description="")
@@ -229,7 +261,6 @@ if __name__ == "__main__":
         "--context_path", default="wikipedia_documents.json", type=str, help=""
     )
     parser.add_argument("--use_faiss", default=False, type=bool, help="")
-    parser.add_argument("--retriever", default="elastic", type=str, help="")
     parser.add_argument(
         "--index_name",
         default="origin-wiki",
@@ -248,28 +279,25 @@ if __name__ == "__main__":
         type=int,
         help="retrieve할 topk 문서의 개수를 설정해주세요",
     )
+    parser.add_argument(
+        "--is_for_reranker",
+        default=False,
+        type=bool,
+        help="reranker 용도일 때 설정해주세요",
+    )
 
     args = parser.parse_args()
     print(args)
 
-    # Test sparse
+    # dataset 로드
     org_dataset = load_from_disk(args.dataset_name)
-    full_ds = concatenate_datasets(
-        [
-            org_dataset["train"].flatten_indices(),
-            org_dataset["validation"].flatten_indices(),
-        ]
-    )  # train dev 를 합친 4192 개 질문에 대해 모두 테스트
-    print("*" * 40, "query dataset", "*" * 40)
-    print(full_ds)
-    print(len(org_dataset["train"]), len(org_dataset["validation"]))
 
     # Elasticsearch index 초기화
     ec = ElasticClient(
         index_name=args.index_name,
         setting_path=args.setting_path,
         dataset_path="../data/wikipedia_documents.json",
-        reset_index=True,
+        manual_mode=True,
     )
 
     # Elasticsearch 사용
@@ -280,34 +308,54 @@ if __name__ == "__main__":
         context_path="wikipedia_documents.json",
     )
 
-    query = "대통령을 포함한 미국의 행정부 견제권을 갖는 국가 기관은?"
-    if args.use_faiss:
-
-        # test single query
-        with timer("single query by faiss"):
-            scores, indices = retriever.retrieve_faiss(query)
-
-        # test bulk
-        with timer("bulk query by exhaustive search"):
-            df = retriever.retrieve_faiss(full_ds)
-            df["correct"] = df["original_context"] == df["context"]
-
-            print("correct retrieval result by faiss", df["correct"].sum() / len(df))
-
+    if args.is_for_reranker:
+        df_for_reranker = retriever.retrieve_for_reranker(
+            org_dataset["validation"], args.topk
+        )
+        df_for_reranker.to_csv(f"es_topk_{args.topk}.csv", index=False)
+        print("rerank를 위한 es retriver 결과 저장됨")
     else:
-        with timer("bulk query by exhaustive search"):
-            df = retriever.retrieve(full_ds, topk=args.topk)
-            df["correct"] = [
-                original_context in context
-                for original_context, context in zip(
-                    df["original_context"], df["context"]
-                )
+        # Test sparse
+        full_ds = concatenate_datasets(
+            [
+                org_dataset["train"].flatten_indices(),
+                org_dataset["validation"].flatten_indices(),
             ]
-            print(
-                "correct retrieval result by exhaustive search",
-                f"{df['correct'].sum()}/{len(df)}",
-                df["correct"].sum() / len(df),
-            )
+        )  # train dev 를 합친 4192 개 질문에 대해 모두 테스트
+        print("*" * 40, "query dataset", "*" * 40)
+        print(full_ds)
+        print(len(org_dataset["train"]), len(org_dataset["validation"]))
 
-        with timer("single query by exhaustive search"):
-            scores, indices = retriever.retrieve(query)
+        query = "대통령을 포함한 미국의 행정부 견제권을 갖는 국가 기관은?"
+        if args.use_faiss:
+
+            # test single query
+            with timer("single query by faiss"):
+                scores, indices = retriever.retrieve_faiss(query)
+
+            # test bulk
+            with timer("bulk query by exhaustive search"):
+                df = retriever.retrieve_faiss(full_ds)
+                df["correct"] = df["original_context"] == df["context"]
+
+                print(
+                    "correct retrieval result by faiss", df["correct"].sum() / len(df)
+                )
+
+        else:
+            with timer("bulk query by exhaustive search"):
+                df = retriever.retrieve(full_ds, topk=args.topk)
+                df["correct"] = [
+                    original_context in context
+                    for original_context, context in zip(
+                        df["original_context"], df["context"]
+                    )
+                ]
+                print(
+                    "correct retrieval result by exhaustive search",
+                    f"{df['correct'].sum()}/{len(df)}",
+                    df["correct"].sum() / len(df),
+                )
+
+            with timer("single query by exhaustive search"):
+                scores, indices = retriever.retrieve(query)

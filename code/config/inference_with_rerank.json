@@ -1,0 +1,11 @@
+{
+    "model_name_or_path": "./models/roberta_large_e3",
+    "output_dir": "./outputs/roberta_large_e3_rerank_20to5",
+    "dataset_name": "../data/test_dataset/",
+    "per_device_eval_batch_size": 16,
+    "retriever_from_file": "../data/retriever/es_20_rerank_5.csv",
+    "retriever_class": "ElasticRetrieval",
+    "top_k_retrieval": 20,
+    "overwrite_output_dir": true,
+    "do_predict": true
+}
