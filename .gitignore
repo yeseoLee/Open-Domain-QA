@@ -22,7 +22,9 @@ wandb
 models
 outputs
 /eda/eda_ignore/
-ensemble/results
+ensemble/results_hard
+ensemble/results_soft
+
 **/.ipynb_checkpoints
 **/lightning_logs
 *.ckpt
