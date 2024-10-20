@@ -6,6 +6,7 @@ Open-Domain Question Answering 을 수행하는 inference 코드 입니다.
 import logging
 from typing import Callable, Dict, List, NoReturn, Tuple
 import numpy as np
+import pandas as pd
 from arguments import ModelArguments, DataTrainingArguments, CustomTrainingArguments
 from datasets import (
     Dataset,
@@ -96,25 +97,30 @@ def run_sparse_retrieval(
     context_path: str = "wikipedia_documents.json",
 ) -> DatasetDict:
 
-    # Query에 맞는 Passage들을 Retrieval 합니다.
-    retriever_class = retrieve_class_from_string(data_args.retriever_class)
-    retriever = retriever_class(
-        tokenize_fn=tokenize_fn,
-        data_path=data_path,
-        context_path=context_path,
-        setting_path=data_args.setting_path,
-        index_name=data_args.index_name,
-    )
-    # if not isinstance(retriever, Retrieval):
-    #     raise TypeError("retrieverz arguments must be Retrieval class")
-
-    if data_args.use_faiss:
-        retriever.build_faiss(num_clusters=data_args.num_clusters)
-        df = retriever.retrieve_faiss(
-            datasets["validation"], topk=data_args.top_k_retrieval
-        )
+    if data_args.retriever_from_file is not None:
+        df = pd.read_csv(data_args.retriever_from_file)
     else:
-        df = retriever.retrieve(datasets["validation"], topk=data_args.top_k_retrieval)
+        # Query에 맞는 Passage들을 Retrieval 합니다.
+        retriever_class = retrieve_class_from_string(data_args.retriever_class)
+        retriever = retriever_class(
+            tokenize_fn=tokenize_fn,
+            data_path=data_path,
+            context_path=context_path,
+            setting_path=data_args.setting_path,
+            index_name=data_args.index_name,
+        )
+        # if not isinstance(retriever, Retrieval):
+        #     raise TypeError("retrieverz arguments must be Retrieval class")
+
+        if data_args.use_faiss:
+            retriever.build_faiss(num_clusters=data_args.num_clusters)
+            df = retriever.retrieve_faiss(
+                datasets["validation"], topk=data_args.top_k_retrieval
+            )
+        else:
+            df = retriever.retrieve(
+                datasets["validation"], topk=data_args.top_k_retrieval
+            )
 
     # test data 에 대해선 정답이 없으므로 id question context 로만 데이터셋이 구성됩니다.
     if training_args.do_predict:

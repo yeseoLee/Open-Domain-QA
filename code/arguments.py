@@ -98,6 +98,9 @@ class DataTrainingArguments:
     use_faiss: bool = field(
         default=False, metadata={"help": "Whether to build with faiss"}
     )
+    retriever_from_file: Optional[str] = field(
+        default=None, metadata={"help": "load retreiver results from df file."}
+    )
     retriever_class: str = field(
         default="TfidfRetrieval",
         metadata={

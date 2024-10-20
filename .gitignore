@@ -30,3 +30,4 @@ ensemble/results
 *.arrow
 *.bin
 */nohup.out
+code/config/exp/*
