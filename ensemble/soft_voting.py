@@ -16,7 +16,6 @@ from difflib import SequenceMatcher
 
 3. 무응답 임계값 설정:
    - 'NO_ANSWER_THRESHOLD' 값을 설정합니다.
-   - 이 값은 0.0 ~ 1.0 사이의 숫자입니다.
    - 최종 선택된 답변의 확률이 이 임계값보다 낮으면 빈 문자열("")을 반환합니다.
    - 예: NO_ANSWER_THRESHOLD = 0.5
      - 이 경우, 최종 답변의 확률이 50% 미만이면 답변을 비웁니다.
