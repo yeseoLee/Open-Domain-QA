@@ -32,3 +32,4 @@ ensemble/results_soft
 *.arrow
 *.bin
 */nohup.out
+code/config/exp/*
