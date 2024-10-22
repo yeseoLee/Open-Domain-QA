@@ -1,6 +1,9 @@
 from typing import List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
+import os
+import pickle
+import sys
 from datasets import Dataset
 from rank_bm25 import BM25Okapi
 from tqdm.auto import tqdm
@@ -41,11 +44,65 @@ class BM25Retrieval(Retrieval):
         """
         super().__init__(tokenize_fn, data_path, context_path, use_title)
 
+        self.get_sparse_embedding()
+
         # Tokenize
-        self.tokenized_corpus = [self.tokenize_fn(doc) for doc in self.contexts]
+        # self.tokenized_corpus = [self.tokenize_fn(doc) for doc in self.contexts]
 
         # Transform by vectorizer
-        self.bm25 = BM25Okapi(self.tokenized_corpus, k1=1.5, b=0.75)
+        # self.bm25 = BM25Okapi(self.tokenized_corpus, k1=1.5, b=0.75)
+
+    def get_sparse_embedding(self) -> None:
+        """Summary:
+        Passage Embedding을 만들고
+        TFIDF와 Embedding을 pickle로 저장합니다.
+        만약 미리 저장된 파일이 있으면 저장된 pickle을 불러옵니다.
+        """
+
+        # Pickle을 불러오거나 저장합니다.
+        pickle_name = f"bm25_sparse_embedding.bin"
+        emd_path = os.path.join(self.data_path, pickle_name)
+
+        if os.path.isfile(emd_path):
+            with open(emd_path, "rb") as file:
+                self.bm25 = pickle.load(file)
+            print("Embedding pickle load.")
+        else:
+            print("Build passage embedding")
+
+            tokenized_corpus = [self.tokenize_fn(doc) for doc in self.contexts]
+            self.bm25 = BM25Okapi(tokenized_corpus, k1=1.5, b=0.75)
+
+            with open(emd_path, "wb") as file:
+                pickle.dump(self.bm25, file)
+            print("Embedding pickle saved.")
+
+    def retrieve_for_reranker(
+        self, query_or_dataset: Dataset, topk: Optional[int] = 1
+    ) -> pd.DataFrame:
+        # Retrieve한 Passage를 pd.DataFrame으로 반환합니다.
+        total = []
+        with timer("query exhaustive search using BM25"):
+            doc_scores, doc_indices = self.get_relevant_doc_bulk(
+                query_or_dataset["question"], k=topk
+            )
+        for idx, example in enumerate(
+            tqdm(query_or_dataset, desc="Sparse retrieval: ")
+        ):
+            tmp = {
+                # Query와 해당 id를 반환합니다.
+                "question": example["question"],
+                "id": example["id"],
+                # Retrieve한 Passage의 id, context를 반환합니다.
+                "context": [self.contexts[pid] for pid in doc_indices[idx]],
+            }
+            if "context" in example.keys() and "answers" in example.keys():
+                # validation 데이터를 사용하면 ground_truth context와 answer도 반환합니다.
+                tmp["original_context"] = example["context"]
+                tmp["answers"] = example["answers"]
+            total.append(tmp)
+
+        return pd.DataFrame(total)
 
     def retrieve(
         self, query_or_dataset: Union[str, Dataset], topk: Optional[int] = 1
@@ -160,57 +217,76 @@ if __name__ == "__main__":
     # Arguments
     parser = argparse.ArgumentParser(description="")
     parser.add_argument(
-        "--dataset_name", metavar="./data/train_dataset", type=str, help=""
+        "--dataset_name", default="../data/train_dataset", type=str, help=""
     )
     parser.add_argument(
         "--model_name_or_path",
-        metavar="bert-base-multilingual-cased",
+        default="monologg/koelectra-base-v3-finetuned-korquad",
         type=str,
         help="",
     )
-    parser.add_argument("--data_path", metavar="./data", type=str, help="")
+    parser.add_argument("--data_path", default="../data", type=str, help="")
     parser.add_argument(
-        "--context_path", metavar="wikipedia_documents", type=str, help=""
+        "--context_path", default="wikipedia_documents.json", type=str, help=""
     )
-    parser.add_argument("--retrieval_method", metavar="bm25", type=str, help="")
+    parser.add_argument(
+        "--topk",
+        default=20,
+        type=int,
+        help="retrieve할 topk 문서의 개수를 설정해주세요",
+    )
+    parser.add_argument(
+        "--is_for_reranker",
+        default=False,
+        type=bool,
+        help="reranker 용도일 때 설정해주세요",
+    )
 
     args = parser.parse_args()
+    print(args)
 
     # Test sparse
     org_dataset = load_from_disk(args.dataset_name)
-    full_ds = concatenate_datasets(
-        [
-            org_dataset["train"].flatten_indices(),
-            org_dataset["validation"].flatten_indices(),
-        ]
-    )  # train dev 를 합친 4192 개 질문에 대해 모두 테스트
-    print("*" * 40, "query dataset", "*" * 40)
-    print(full_ds)
 
     from transformers import AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(
         args.model_name_or_path,
-        use_fast=False,
     )
 
     retriever = BM25Retrieval(
         tokenize_fn=tokenizer.tokenize,
         data_path=args.data_path,
         context_path=args.context_path,
+        use_title=True,
     )
 
-    query = "대통령을 포함한 미국의 행정부 견제권을 갖는 국가 기관은?"
-
-    # test single query
-    with timer("single query by exhaustive search using bm25"):
-        scores, indices = retriever.retrieve(query)
-
-    # test bulk
-    with timer("bulk query by exhaustive search using bm25"):
-        df = retriever.retrieve(full_ds)
-        df["correct"] = df["original_context"] == df["context"]
-        print(
-            "correct retrieval result by exhaustive search",
-            df["correct"].sum() / len(df),
+    if args.is_for_reranker:
+        df_for_reranker = retriever.retrieve_for_reranker(
+            org_dataset["validation"], args.topk
         )
+        df_for_reranker.to_csv(f"train_bm25_{args.topk}.csv", index=False)
+        print("rerank를 위한 es retriver 결과 저장됨")
+    else:
+        full_ds = concatenate_datasets(
+            [
+                org_dataset["train"].flatten_indices(),
+                org_dataset["validation"].flatten_indices(),
+            ]
+        )  # train dev 를 합친 4192 개 질문에 대해 모두 테스트
+        print("*" * 40, "query dataset", "*" * 40)
+        print(full_ds)
+        query = "대통령을 포함한 미국의 행정부 견제권을 갖는 국가 기관은?"
+
+        # test single query
+        with timer("single query by exhaustive search using bm25"):
+            scores, indices = retriever.retrieve(query)
+
+        # test bulk
+        with timer("bulk query by exhaustive search using bm25"):
+            df = retriever.retrieve(full_ds)
+            df["correct"] = df["original_context"] == df["context"]
+            print(
+                "correct retrieval result by exhaustive search",
+                df["correct"].sum() / len(df),
+            )

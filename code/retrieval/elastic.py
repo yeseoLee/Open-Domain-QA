@@ -1,5 +1,5 @@
 import json
-import os
+import os, sys
 import pprint
 import warnings
 import re
@@ -312,7 +312,7 @@ if __name__ == "__main__":
         df_for_reranker = retriever.retrieve_for_reranker(
             org_dataset["validation"], args.topk
         )
-        df_for_reranker.to_csv(f"es_topk_{args.topk}.csv", index=False)
+        df_for_reranker.to_csv(f"es_{args.topk}.csv", index=False)
         print("rerank를 위한 es retriver 결과 저장됨")
     else:
         # Test sparse

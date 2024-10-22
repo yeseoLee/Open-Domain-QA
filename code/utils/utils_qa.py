@@ -448,8 +448,12 @@ def retrieve_class_from_string(class_name: str):
         from retrieval.elastic import ElasticRetrieval
 
         return ElasticRetrieval
+    elif class_name == "ElasticRerankRetrieval":
+        from retrieval.reranker import ElasticRerankRetrieval
+
+        return ElasticRerankRetrieval
     elif class_name == "DenseRetrieval":
-        from code.retrieval.dense_backup import DenseRetrieval
+        from retrieval.dense import DenseRetrieval
 
         return DenseRetrieval
     else:

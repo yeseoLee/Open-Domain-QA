@@ -3,8 +3,27 @@ import numpy as np
 import pandas as pd
 import torch
 from tqdm import tqdm
-from torch.nn.utils.rnn import pad_sequence
+from datasets import Dataset
+from typing import Optional, Union
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, set_seed
+from retrieval.elastic import ElasticRetrieval
+
+
+class ElasticRerankRetrieval:
+    def __init__(
+        self, index_name, setting_path, data_path, context_path, *args, **kwargs
+    ):
+        self.elastic_retrieval = ElasticRetrieval(
+            index_name, setting_path, data_path, context_path
+        )
+
+    def retrieve(self, query_or_dataset: Union[str, Dataset], topk: Optional[int] = 5):
+        if isinstance(query_or_dataset, str):
+            raise NotImplementedError
+
+        elif isinstance(query_or_dataset, Dataset):
+            df = self.elastic_retrieval.retrieve_for_reranker(query_or_dataset, 40)
+            return rerank(df=df, topk=topk)
 
 
 def rerank(
