@@ -323,7 +323,7 @@ if __name__=="__main__":
 
     # args set
     args = TrainingArguments(
-        output_dir="./retrieval",
+        output_dir="./retrieval/dense_encoder",
         evaluation_strategy="epoch",
         learning_rate=5e-5,
         per_device_train_batch_size=8,
