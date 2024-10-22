@@ -48,7 +48,6 @@ class BertEncoder(BertPreTrainedModel):
 
 
 class DenseRetrieval:
-
     def __init__(self,
         args,
         dataset,
@@ -283,17 +282,18 @@ class DenseRetrieval:
 
 
 # wandB 초기화 및 저장 폴더 생성
-def wandb_init(run_name, base_path="../../../wandb"):
+def wandb_init(run_name, base_path="../wandb"):
     # 현재 시각
     current_time = datetime.now().strftime("%m%d_%H%M")
     wandb_name = f"klue/bert-base_{current_time}"
 
     # WandB 초기화
-    wandb.init(project="wandb_logs", name=wandb_name, config={
-        "learning_rate" : 5e-5,
-        "batch_size" : 8,
-        "epoch" : 3
-    })  # 프로젝트 이름과 실험 이름 설정
+    wandb.init(project="wandb_logs", name=wandb_name, dir=base_path,
+                config={
+                "learning_rate" : 5e-5,
+                "batch_size" : 8,
+                "epoch" : 3
+        })  # 프로젝트 이름과 실험 이름 설정
 
     # set run name
     wandb.run.name = run_name
@@ -328,7 +328,7 @@ if __name__=="__main__":
         learning_rate=5e-5,
         per_device_train_batch_size=8,
         per_device_eval_batch_size=8,
-        num_train_epochs=3,
+        num_train_epochs=5,
         weight_decay=0.01
     )
     model_checkpoint = "klue/bert-base"
