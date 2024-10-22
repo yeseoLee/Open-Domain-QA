@@ -99,6 +99,9 @@ def run_sparse_retrieval(
 
     if data_args.retriever_from_file is not None:
         df = pd.read_csv(data_args.retriever_from_file)
+        # string -> dict type casting
+        if training_args.do_eval:
+            df["answers"] = df["answers"].apply(lambda x: eval(x))
     else:
         # Query에 맞는 Passage들을 Retrieval 합니다.
         retriever_class = retrieve_class_from_string(data_args.retriever_class)
