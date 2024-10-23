@@ -38,6 +38,12 @@ class ModelArguments:
             "help": "model이 BERT이면 True, RoBERTa 등은 False. RoBERTa는 BERT와 달리 token_type_ids(문장 간 구분을 위한 역할을 수행)를 사용하지 않음"
         },
     )
+    use_checkpoint: bool = field(
+        default=True,
+        metadata={
+            "help": "전이 학습이면 False, 아니라면 True 사용하여 checkpoint 명시적으로 사용 여부를 지정할 수 있음"
+        },
+    )
 
 
 @dataclass
