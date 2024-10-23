@@ -1,9 +1,11 @@
 import json
 import os
+import pandas as pd
+
 import torch
 import pickle
-from typing import List, Tuple, Optional
-from datasets import load_from_disk
+from typing import List, Optional, Tuple, Union
+from datasets import load_from_disk, Dataset
 from transformers import AutoTokenizer
 from pprint import pprint
 
@@ -11,12 +13,14 @@ class DenseRetrieval:
     def __init__(
         self,
         tokenize_fn,
+        setting_path,
+        index_name,
         data_path: Optional[str] = "../data/",
         context_path: Optional[str] = "wikipedia_documents.json",
         model_checkpoint: str = "klue/bert-base",
-        passage_encoder_path: str = "dense_retrieval/p_klue_bert_base.bin_3",
-        query_encoder_path: str = "dense_retrieval/q_klue_bert_base.bin_3",
-        use_title: bool = True,
+        passage_encoder_path: str = "./retrieval/dense_encoder/p_korquad_1.bin",
+        query_encoder_path: str = "./retrieval/dense_encoder/q_korquad_1.bin",
+        use_title: bool = False,
     ) -> None:
         self.data_path = data_path
         self.context_path = context_path
@@ -34,7 +38,7 @@ class DenseRetrieval:
         self.p_encoder.eval()
         self.q_encoder.eval()
 
-    def retrieve(self, query: str, passages: List[str], k: int = 5) -> List[int]:
+    def get_topk_passages_for_dataset(self, query: str, passages: List[str], topk: int = 20) -> List[int]:
         """Retrieve the top-k relevant passages for the given query."""
         # Tokenize query
         with torch.no_grad():
@@ -52,9 +56,9 @@ class DenseRetrieval:
             dot_prod_scores = torch.matmul(q_emb, torch.transpose(p_embs, 0, 1))  # (num_query, num_passage)
             ranked_indices = torch.argsort(dot_prod_scores, dim=1, descending=True).squeeze().tolist()
 
-        return ranked_indices[:k]
+        return ranked_indices[:topk]
 
-    def get_relevant_doc(self, query: str, k: int = 5) -> Tuple[List[str], List[int]]:
+    def get_relevant_doc(self, query: str, topk: int = 20) -> Tuple[List[str], List[int]]:
         """Retrieve the top-k relevant passages and their indices for a given query."""
         # Load the context (Wikipedia passages)
         context_file = os.path.join(self.data_path, self.context_path)
@@ -63,22 +67,26 @@ class DenseRetrieval:
         contexts = list(dict.fromkeys([value["text"] for value in wiki_data.values()]))
 
         # Retrieve relevant passages
-        ranked_indices = self.retrieve(query=query, passages=contexts, k=k)
+        ranked_indices = self.get_topk_passages_for_dataset(query=query, passages=contexts, topk=topk)
         retrieved_passages = [contexts[idx] for idx in ranked_indices]
 
-        return retrieved_passages, ranked_indices
+        return retrieved_passages
 
-    def get_topk_passages_for_dataset(self, dataset, k: int = 5):
+    def retrieve(self, dataset: Union[str, Dataset], topk: int = 20):
         """Retrieve top-k passages for all queries in a dataset."""
         queries = dataset["question"]
-        contexts = dataset["context"]
+        ids = dataset["id"]
 
-        for query in queries[:5]:  # Example: retrieve for the first 5 queries
-            retrieved_passages, indices = self.get_relevant_doc(query=query, k=k)
-            print(f"[Query] {query}")
-            for i, (passage, idx) in enumerate(zip(retrieved_passages, indices)):
-                print(f"Top-{i + 1} Passage (Index {idx}):")
-                pprint(passage)
+        example_data = {"question": [],
+                        "context": [],
+                        "id": []}
+        for idx in range(len(queries)):  # Example: retrieve for the first 5 queries
+            retrieved_passages = self.get_relevant_doc(query=queries[idx], topk=topk)
+            example_data["question"].append(queries[idx])
+            example_data["id"].append(ids[idx])
+            example_data["context"].append(" ".join(retrieved_passages))
+        
+        return pd.DataFrame(example_data)
 
 if __name__ == "__main__":
     # Load dataset (train_dataset assumed to be at data_path)
@@ -92,9 +100,9 @@ if __name__ == "__main__":
         data_path=data_path,
         context_path="wikipedia_documents.json",
         model_checkpoint="klue/bert-base",
-        passage_encoder_path="dense_retrieval/p_klue_bert_base.bin_3",
-        query_encoder_path="dense_retrieval/q_klue_bert_base.bin_3",
+        passage_encoder_path="dense_encoder/p_korquad_1.bin",
+        query_encoder_path="dense_encoder/q_korquad_1.bin",
     )
 
     # Example: retrieve top-5 passages for the validation dataset
-    dense_retriever.get_topk_passages_for_dataset(val_dataset, k=5)
+    dense_retriever.get_topk_passages_for_dataset(val_dataset, topk=5)
