@@ -5,7 +5,7 @@
 import train
 import inference
 from arguments import ModelArguments, DataTrainingArguments, CustomTrainingArguments
-from utils.utils_qa import load_arguments
+from utils.utils_qa import load_arguments, set_seed
 
 
 def train_to_eval(
@@ -30,6 +30,10 @@ def eval_to_inference(
 ):
     # dataset 변경: train -> test
     data_args.dataset_name = data_args.dataset_name.replace("train", "test")
+    if data_args.retriever_from_file is not None:
+        data_args.retriever_from_file = data_args.retriever_from_file.replace(
+            "train", "test"
+        )
     # do_eval -> do_predict
     training_args.do_eval = False
     training_args.do_predict = True
@@ -59,4 +63,5 @@ def main():
 
 
 if __name__ == "__main__":
+    set_seed()
     main()

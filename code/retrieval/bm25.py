@@ -1,3 +1,8 @@
+if __name__ == "__main__":
+    import sys, os
+
+    sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
 from typing import List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
@@ -258,15 +263,15 @@ if __name__ == "__main__":
         tokenize_fn=tokenizer.tokenize,
         data_path=args.data_path,
         context_path=args.context_path,
-        use_title=True,
+        use_title=False,
     )
 
     if args.is_for_reranker:
         df_for_reranker = retriever.retrieve_for_reranker(
             org_dataset["validation"], args.topk
         )
-        df_for_reranker.to_csv(f"train_bm25_{args.topk}.csv", index=False)
-        print("rerank를 위한 es retriver 결과 저장됨")
+        df_for_reranker.to_csv(f"bm25_{args.topk}.csv", index=False)
+        print("rerank를 위한 bm25 retriver 결과 저장됨")
     else:
         full_ds = concatenate_datasets(
             [
