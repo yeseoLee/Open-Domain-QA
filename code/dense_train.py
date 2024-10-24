@@ -1,3 +1,4 @@
+import json
 import os
 import numpy as np
 import random
@@ -15,12 +16,12 @@ from datasets import load_from_disk
 from transformers import (
     AutoTokenizer,
     TrainingArguments,
-    AdamW, get_linear_schedule_with_warmup,
+    AdamW, get_linear_schedule_with_warmup
 )
 from BertEncoder import BertEncoder
 
-class DenseRetrieval:
 
+class DenseRetrieval:
     def __init__(self,
         args,
         dataset,
@@ -53,13 +54,13 @@ class DenseRetrieval:
         p_with_neg = []
 
         for c in self.dataset["context"]:
-          while True:
-            neg_idxs = np.random.randint(len(corpus), size=num_neg)
+            while True:
+                neg_idxs = np.random.randint(len(corpus), size=num_neg)
 
-            if not c in corpus[neg_idxs]:
-              p_with_neg.append(c)
-              p_with_neg.extend(corpus[neg_idxs])
-              break
+                if not c in corpus[neg_idxs]:
+                    p_with_neg.append(c)
+                    p_with_neg.extend(corpus[neg_idxs])
+                    break
 
         # tokenizer
         q_seqs = self.tokenizer(
@@ -87,7 +88,7 @@ class DenseRetrieval:
 
         self.batch_size = self.args.per_device_train_batch_size
         # Dataloader
-        self.train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size)
+        self.train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, drop_last=True)
 
 
     # Validation 데이터 전처리 및 dataloader 만들기
@@ -212,10 +213,10 @@ class DenseRetrieval:
             wandb.log({"validation_loss": val_loss})
             
             os.makedirs(self.args.output_dir, exist_ok=True)
-            with open(self.args.output_dir + "/" + p_encoder_name, "wb") as f:
+            with open(self.args.output_dir + p_encoder_name, "wb") as f:
                pickle.dump(self.p_encoder, f)
 
-            with open(self.args.output_dir + "/" + q_encoder_name, "wb") as f:
+            with open(self.args.output_dir + q_encoder_name, "wb") as f:
                pickle.dump(self.q_encoder, f)
 
 
@@ -253,19 +254,19 @@ class DenseRetrieval:
             return total_loss / len(dataloader)
 
 
-
 # wandB 초기화 및 저장 폴더 생성
-def wandb_init(run_name, base_path="../../../wandb"):
+def wandb_init(run_name, base_path="../wandb"):
     # 현재 시각
     current_time = datetime.now().strftime("%m%d_%H%M")
     wandb_name = f"klue/bert-base_{current_time}"
 
     # WandB 초기화
-    wandb.init(project="wandb_logs", name=wandb_name, config={
-        "learning_rate" : 5e-5,
-        "batch_size" : 8,
-        "epoch" : 3
-    })  # 프로젝트 이름과 실험 이름 설정
+    wandb.init(project="wandb_logs", name=wandb_name, dir=base_path,
+                config={
+                "learning_rate" : 5e-5,
+                "batch_size" : 8,
+                "epoch" : 3
+        })  # 프로젝트 이름과 실험 이름 설정
 
     # set run name
     wandb.run.name = run_name
@@ -285,22 +286,26 @@ if __name__=="__main__":
     # WandB 초기화
     wandb_init("klue/bert-base_1")
 
-    p_encoder_name = ""
-    q_encoder_name = ""
+    # "/bin_name.bin"
+    p_encoder_name = "/p_test.bin"
+    q_encoder_name = "/q_test.bin"
 
     # load dataset
     dataset = load_from_disk("../data/train_dataset")
-    train_dataset = dataset["train"]
+    with open('../data/korquad_train_dataset.json', "r") as f:
+        train_dataset = json.load(f)
+
+    # train_dataset = dataset["train"]
     val_dataset = dataset["validation"]
 
     # args set
     args = TrainingArguments(
-        output_dir="./dense_retrieval",
+        output_dir="./retrieval/dense_encoder",
         evaluation_strategy="epoch",
-        learning_rate=5e-5,
-        per_device_train_batch_size=8,
-        per_device_eval_batch_size=8,
-        num_train_epochs=3,
+        learning_rate=4e-5,
+        per_device_train_batch_size=5,
+        per_device_eval_batch_size=5,
+        num_train_epochs=2,
         weight_decay=0.01
     )
     model_checkpoint = "klue/bert-base"
