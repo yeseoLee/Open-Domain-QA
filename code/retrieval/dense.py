@@ -1,5 +1,6 @@
 import json
 import os
+from tqdm import tqdm
 import pandas as pd
 
 import torch
@@ -38,7 +39,7 @@ class DenseRetrieval:
         self.p_encoder.eval()
         self.q_encoder.eval()
 
-    def get_topk_passages_for_dataset(self, query: str, passages: List[str], topk: int = 20) -> List[int]:
+    def get_dot_scores_rank(self, query: str, passages: List[str], topk: int = 20) -> List[int]:
         """Retrieve the top-k relevant passages for the given query."""
         # Tokenize query
         with torch.no_grad():
@@ -67,7 +68,7 @@ class DenseRetrieval:
         contexts = list(dict.fromkeys([value["text"] for value in wiki_data.values()]))
 
         # Retrieve relevant passages
-        ranked_indices = self.get_topk_passages_for_dataset(query=query, passages=contexts, topk=topk)
+        ranked_indices = self.get_dot_scores_rank(query=query, passages=contexts, topk=topk)
         retrieved_passages = [contexts[idx] for idx in ranked_indices]
 
         return retrieved_passages
@@ -80,7 +81,7 @@ class DenseRetrieval:
         example_data = {"question": [],
                         "context": [],
                         "id": []}
-        for idx in range(len(queries)):  # Example: retrieve for the first 5 queries
+        for idx in tqdm(range(len(queries)), total=len(queries), desc="Searching", unit="query"):  # Example: retrieve for the first 5 queries
             retrieved_passages = self.get_relevant_doc(query=queries[idx], topk=topk)
             example_data["question"].append(queries[idx])
             example_data["id"].append(ids[idx])
