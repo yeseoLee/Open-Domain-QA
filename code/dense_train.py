@@ -16,35 +16,9 @@ from datasets import load_from_disk
 from transformers import (
     AutoTokenizer,
     TrainingArguments,
-    AdamW, get_linear_schedule_with_warmup,
-    BertModel, BertPreTrainedModel
+    AdamW, get_linear_schedule_with_warmup
 )
-
-class BertEncoder(BertPreTrainedModel):
-
-    def __init__(self,
-        config
-    ):
-        super(BertEncoder, self).__init__(config)
-
-        self.bert = BertModel(config)
-        self.init_weights()
-
-
-    def forward(self,
-            input_ids,
-            attention_mask=None,
-            token_type_ids=None
-        ):
-
-        outputs = self.bert(
-            input_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids
-        )
-
-        pooled_output = outputs[1]
-        return pooled_output
+from BertEncoder import BertEncoder
 
 
 class DenseRetrieval:
