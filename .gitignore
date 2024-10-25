@@ -1,0 +1,35 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.idea/
+# macOS
+*DS_Store
+
+# custom
+data/*
+!data/.gitkeep
+wandb
+models
+outputs
+/eda/eda_ignore/
+ensemble/results_hard
+ensemble/results_soft
+
+**/.ipynb_checkpoints
+**/lightning_logs
+*.ckpt
+*.pt
+*.arrow
+*.bin
+*/nohup.out
+code/config/exp/*
