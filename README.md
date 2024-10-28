@@ -14,9 +14,9 @@
 
 ## 팀원
 
-|[이예서](https://github.com/yeseoLee)|[김수진](https://github.com/Sujinkim-625)|[김민서](https://github.com/cukminseo)|[홍성재](https://github.com/koreannn)|[양가연](https://github.com/gayeon7877)|[홍성민](https://github.com/hsmin9809)|
+|[이예서](https://github.com/yeseoLee)|[김수진](https://github.com/Sujinkim-625)|[김민서](https://github.com/luckyvickyricky)|[홍성재](https://github.com/koreannn)|[양가연](https://github.com/gayeon7877)|[홍성민](https://github.com/hsmin9809)|
 |:-:|:-:|:-:|:-:|:-:|:-:|
-|<a href="https://github.com/yeseoLee"><img src="https://github.com/yeseoLee.png" width='300px' style="border-radius: 50%;"></a>|<a href="https://github.com/Sujinkim-625"><img src="https://github.com/Sujinkim-625.png" width='300px' style="border-radius: 50%;"></a>|<a href="https://github.com/cukminseo"><img src="https://github.com/cukminseo.png" width='300px' style="border-radius: 50%;"></a>|<a href="https://github.com/koreannn"><img src="https://github.com/koreannn.png" width='300px' style="border-radius: 50%;"></a>|<a href="https://github.com/gayeon7877"><img src="https://github.com/gayeon7877.png" width='300px' style="border-radius: 50%;"></a>|<a href="https://github.com/hsmin9809"><img src="https://github.com/hsmin9809.png" width='300px' style="border-radius: 50%;"></a>|
+|<a href="https://github.com/yeseoLee"><img src="https://github.com/yeseoLee.png" width='300px' style="border-radius: 50%;"></a>|<a href="https://github.com/Sujinkim-625"><img src="https://github.com/Sujinkim-625.png" width='300px' style="border-radius: 50%;"></a>|<a href="https://github.com/luckyvickyricky"><img src="https://github.com/luckyvickyricky.png" width='300px' style="border-radius: 50%;"></a>|<a href="https://github.com/koreannn"><img src="https://github.com/koreannn.png" width='300px' style="border-radius: 50%;"></a>|<a href="https://github.com/gayeon7877"><img src="https://github.com/gayeon7877.png" width='300px' style="border-radius: 50%;"></a>|<a href="https://github.com/hsmin9809"><img src="https://github.com/hsmin9809.png" width='300px' style="border-radius: 50%;"></a>|
 
 ## 역할
 
