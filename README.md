@@ -106,4 +106,4 @@ level2-mrc-nlp-04
 - setup: GPU 서버 세팅을 위한 스크립트를 관리합니다.
 
 ## 실행 방법
-- [학습 및 추론 코드 사용 방법](./code/README.md)  
+[학습 및 추론 코드 사용 방법](./code/README.md)  
