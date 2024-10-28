@@ -103,7 +103,7 @@ level2-mrc-nlp-04
 - ensemble: 추론 결과 파일을 이용한 앙상블을 수행하는 코드를 관리합니다.
 - external_dataset_processing: 외부 데이터셋 사용을 위한 전처리 코드를 관리합니다.
 - notebooks: 데이터 분석 및 전처리, 증강 방법 소개와 구현 코드 사용법 안내 등의 주피터 노트북 파일을 관리합니다.
-- setup: GPU 서버 세팅을 위한 스크립트를 관리합니다.
+- setup: GPU 서버 개발 환경 세팅을 위한 스크립트를 관리합니다.
 
 ## 실행 방법
-[학습 및 추론 코드 사용 방법](./code/README.md)  
+[학습 및 추론 코드 사용 방법](code/README.MD)  
