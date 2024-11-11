@@ -105,5 +105,32 @@ level2-mrc-nlp-04
 - notebooks: 데이터 분석 및 전처리, 증강 방법 소개와 구현 코드 사용법 안내 등의 주피터 노트북 파일을 관리합니다.
 - setup: GPU 서버 개발 환경 세팅을 위한 스크립트를 관리합니다.
 
-## 실행 방법
+## Dependencies
+```angular2html
+# Data manipulation and analysis
+pandas
+numpy==1.24.1
+
+# Machine Learning libraries
+scikit-learn
+torch==1.13
+datasets==2.15.0
+transformers==4.25.1
+faiss-gpu
+
+# Progress and logging utilities
+tqdm
+wandb
+
+# Information retrieval libraries
+rank_bm25
+elasticsearch
+```
+
+## Usage
+1. Settings
+```angular2html
+pip install -r setup/requirements.txt
+```
+2. Train & Inference   
 [학습 및 추론 코드 사용 방법](code/README.MD)  
