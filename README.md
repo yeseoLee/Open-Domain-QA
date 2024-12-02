@@ -1,4 +1,4 @@
-# ODQA(Open-Domain Question Anwering Competition)
+# ODQA(Open-Domain Question Answering Competition)
 
 ## 개요
 
