@@ -10,6 +10,7 @@
 | 진행 기간 |  2024년 10월 2일 ~ 2024년 10월 24일 |
 
 ## 최종 리더보드 (Private)
+- **16팀 중 1위**  
 <img width="1216" alt="image" src="./assets/leaderboard.png">
 
 ## 팀원
